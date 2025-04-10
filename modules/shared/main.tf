@@ -79,6 +79,11 @@ resource "aws_athena_workgroup" "cost_analysis" {
 resource "aws_athena_database" "cost_analysis" {
   name   = var.database_name
   bucket = var.results_bucket_name
+
+  encryption_configuration {
+    encryption_option = "SSE_KMS"
+    kms_key           = aws_kms_key.cost_analysis.arn
+  }
 }
 
 # IAM policy document for Athena assume role
