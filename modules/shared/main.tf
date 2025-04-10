@@ -14,6 +14,33 @@ resource "aws_kms_alias" "cost_analysis" {
 
 # IAM policy document for KMS key usage
 data "aws_iam_policy_document" "kms_key_policy" {
+  # Root account access
+  statement {
+    effect = "Allow"
+    actions = [
+      "kms:*"
+    ]
+    resources = ["*"]
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+  }
+
+  # Creator access
+  statement {
+    effect = "Allow"
+    actions = [
+      "kms:*"
+    ]
+    resources = ["*"]
+    principals {
+      type        = "AWS"
+      identifiers = [data.aws_caller_identity.current.arn]
+    }
+  }
+
+  # Athena access
   statement {
     effect = "Allow"
     actions = [
@@ -31,6 +58,7 @@ data "aws_iam_policy_document" "kms_key_policy" {
     }
   }
 
+  # S3 access
   statement {
     effect = "Allow"
     actions = [
@@ -48,6 +76,9 @@ data "aws_iam_policy_document" "kms_key_policy" {
     }
   }
 }
+
+# Get current AWS account ID
+data "aws_caller_identity" "current" {}
 
 resource "aws_kms_key_policy" "cost_analysis" {
   key_id = aws_kms_key.cost_analysis.id

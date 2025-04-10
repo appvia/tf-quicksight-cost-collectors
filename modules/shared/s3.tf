@@ -21,7 +21,21 @@ module "s3_bucket" {
 # bucket policy to allow athena to write to the bucket
 data "aws_iam_policy_document" "athena_policy" {
   statement {
+    effect    = "Allow"
     actions   = ["s3:PutObject"]
     resources = ["${module.s3_bucket.s3_bucket_arn}/*"]
+    principals {
+      type        = "Service"
+      identifiers = ["athena.amazonaws.com"]
+    }
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = ["${module.s3_bucket.s3_bucket_arn}"]
+    principals {
+      type        = "Service"
+      identifiers = ["athena.amazonaws.com"]
+    }
   }
 }

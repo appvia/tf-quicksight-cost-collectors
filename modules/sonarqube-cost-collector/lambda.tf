@@ -27,9 +27,15 @@ data "aws_iam_policy_document" "cost_collector" {
   }
 }
 
+resource "aws_iam_policy" "cost_collector" {
+  name        = "sonarqube-cost-collector"
+  description = "Policy for the sonarqube cost collector"
+  policy      = data.aws_iam_policy_document.cost_collector.json
+}
+
 resource "aws_iam_role_policy_attachment" "cost_collector" {
   role       = aws_iam_role.cost_collector.name
-  policy_arn = data.aws_iam_policy_document.cost_collector.arn
+  policy_arn = aws_iam_policy.cost_collector.arn
 }
 
 resource "aws_iam_role" "cost_collector" {
