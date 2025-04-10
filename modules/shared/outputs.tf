@@ -17,3 +17,8 @@ output "athena_role_name" {
   description = "Name of the Athena IAM role"
   value       = aws_iam_role.athena_role.name
 }
+
+output "kms_key_arn" {
+  description = "ARN of the KMS key used for encryption"
+  value       = aws_kms_key.cost_analysis.arn
+}

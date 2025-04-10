@@ -1,3 +1,59 @@
+# KMS key for encryption
+resource "aws_kms_key" "cost_analysis" {
+  description             = "KMS key for cost analysis infrastructure"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  tags = var.tags
+}
+
+resource "aws_kms_alias" "cost_analysis" {
+  name          = "alias/${var.key_alias}"
+  target_key_id = aws_kms_key.cost_analysis.key_id
+}
+
+# IAM policy document for KMS key usage
+data "aws_iam_policy_document" "kms_key_policy" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:Encrypt",
+      "kms:GenerateDataKey",
+      "kms:ReEncryptFrom",
+      "kms:ReEncryptTo"
+    ]
+    resources = [aws_kms_key.cost_analysis.arn]
+    principals {
+      type        = "Service"
+      identifiers = ["athena.amazonaws.com"]
+    }
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:Encrypt",
+      "kms:GenerateDataKey",
+      "kms:ReEncryptFrom",
+      "kms:ReEncryptTo"
+    ]
+    resources = [aws_kms_key.cost_analysis.arn]
+    principals {
+      type        = "Service"
+      identifiers = ["s3.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_kms_key_policy" "cost_analysis" {
+  key_id = aws_kms_key.cost_analysis.id
+  policy = data.aws_iam_policy_document.kms_key_policy.json
+}
+
 # Athena Workgroup
 resource "aws_athena_workgroup" "cost_analysis" {
   name = var.workgroup_name
@@ -8,6 +64,11 @@ resource "aws_athena_workgroup" "cost_analysis" {
 
     result_configuration {
       output_location = "s3://${var.results_bucket_name}/athena-results/"
+
+      encryption_configuration {
+        encryption_option = "SSE_KMS"
+        kms_key_arn       = aws_kms_key.cost_analysis.arn
+      }
     }
   }
 

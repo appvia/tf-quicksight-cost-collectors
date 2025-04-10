@@ -21,6 +21,12 @@ variable "athena_role_name" {
   default     = "athena_cost_analysis_role"
 }
 
+variable "key_alias" {
+  description = "Alias for the KMS key"
+  type        = string
+  default     = "cost-analysis-key"
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)

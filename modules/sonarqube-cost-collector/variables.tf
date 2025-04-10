@@ -28,3 +28,8 @@ variable "athena_database_name" {
   description = "Name of the Athena database from the shared module"
   type        = string
 }
+
+variable "kms_key_arn" {
+  description = "ARN of the KMS key to use for encryption"
+  type        = string
+}

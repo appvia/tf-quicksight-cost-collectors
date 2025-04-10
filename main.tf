@@ -12,8 +12,8 @@ provider "aws" {
 }
 
 # Example caller for the Athena shared module
-module "athena_shared" {
-  source = "./modules/athena-shared"
+module "shared" {
+  source = "./modules/shared"
 
   # Required variables
   results_bucket_name = "my-athena-results-bucket" # Replace with your desired bucket name
@@ -22,6 +22,7 @@ module "athena_shared" {
   workgroup_name   = "cost_analysis_workgroup"   # Optional: defaults to "cost_analysis_workgroup"
   database_name    = "cost_analysis"             # Optional: defaults to "cost_analysis"
   athena_role_name = "athena_cost_analysis_role" # Optional: defaults to "athena_cost_analysis_role"
+  key_alias        = "cost-analysis-key"         # Optional: defaults to "cost-analysis-key"
 
   tags = {
     Environment = "production"
@@ -35,8 +36,9 @@ module "sonarqube_cost_collector" {
   source = "./modules/sonarqube-cost-collector"
 
   # Required variables - using outputs from athena_shared module
-  athena_workgroup_name = module.athena_shared.workgroup_name
-  athena_database_name  = module.athena_shared.database_name
+  athena_workgroup_name = module.shared.workgroup_name
+  athena_database_name  = module.shared.database_name
+  kms_key_arn           = module.shared.kms_key_arn
 
   # Optional variables with defaults
   bucket_name          = "my-sonarqube-cost-collector" # Optional: defaults to "sonarqube-cost-collector"
