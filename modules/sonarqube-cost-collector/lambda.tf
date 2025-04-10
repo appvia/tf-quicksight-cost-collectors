@@ -9,7 +9,7 @@ resource "aws_lambda_function" "cost_collector" {
       # SONARQUBE_PORT              = var.sonarqube_port
       # SONARQUBE_SCHEME            = var.sonarqube_scheme
       # SONARQUBE_TOKEN_SECRET_NAME = var.sonarqube_token_secret_name
-      OUTPUT_BUCKET = module.s3_bucket[0].s3_bucket_name
+      OUTPUT_BUCKET = module.s3_bucket[0].s3_bucket_id
     }
   }
   filename         = "${path.module}/lambda/lambda.zip"
