@@ -1,6 +1,6 @@
-# Create the Glue catalog table for SonarQube cost data
-resource "aws_glue_catalog_table" "sonarqube_cost_data" {
-  name          = "sonarqube_cost_data"
+# Create the Glue catalog table for SonarQube cost data (raw format)
+resource "aws_glue_catalog_table" "sonarqube_cost_data_raw" {
+  name          = "sonarqube_cost_data_raw"
   database_name = var.athena_database_name
 
   table_type = "EXTERNAL_TABLE"
@@ -42,7 +42,26 @@ resource "aws_glue_catalog_table" "sonarqube_cost_data" {
     }
     columns {
       name = "timestamp"
-      type = "timestamp"
+      type = "string"
     }
   }
+}
+
+# Create a view that converts the string timestamp to a proper timestamp
+resource "aws_athena_named_query" "sonarqube_cost_data_view" {
+  name        = "create_sonarqube_cost_data_view"
+  workgroup   = var.athena_workgroup_name
+  database    = var.athena_database_name
+  description = "Creates a view with properly formatted timestamps"
+  query       = <<-EOF
+    CREATE OR REPLACE VIEW sonarqube_cost_data AS
+    SELECT
+      extractedTenant,
+      projectKey,
+      projectName,
+      linesOfCode,
+      licenseUsagePercentage,
+      from_iso8601_timestamp(timestamp) as timestamp
+    FROM sonarqube_cost_data_raw;
+  EOF
 }
