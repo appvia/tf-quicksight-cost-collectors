@@ -44,8 +44,10 @@ def lambda_handler(event, context):
         # Parse the JSON response
         data = json.loads(response.data.decode("utf-8"))
 
-        # Generate timestamp for unique filenames
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        # Generate timestamp in ISO format
+        current_time = datetime.datetime.now()
+        timestamp_iso = current_time.isoformat()
+        timestamp_filename = current_time.strftime("%Y%m%d_%H%M%S")
 
         # Track successful uploads
         uploaded_files = []
@@ -54,16 +56,19 @@ def lambda_handler(event, context):
         for project in data["projects"]:
             # Extract only the required fields
             project_data = {
+                "extractedTenant": project["projectName"].split("-")[
+                    0
+                ],  # TODO: make this more robust
                 "projectKey": project["projectKey"],
                 "projectName": project["projectName"],
                 "linesOfCode": project["linesOfCode"],
                 "licenseUsagePercentage": project["licenseUsagePercentage"],
-                "timestamp": timestamp,
+                "timestamp": timestamp_iso,  # Use ISO format for the data
             }
 
             # Create a structured S3 key with project key as prefix
             # This helps with Athena partitioning
-            s3_key = f"projects/{project['projectKey']}/{timestamp}.json"
+            s3_key = f"projects/{project['projectKey']}_{timestamp_filename}.json"  # Keep filename format for consistency
 
             # Upload individual project data to S3
             s3_client.put_object(
