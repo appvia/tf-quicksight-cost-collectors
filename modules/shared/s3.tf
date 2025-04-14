@@ -18,7 +18,11 @@ module "s3_bucket" {
   }
 }
 
-# bucket policy to allow athena to write to the bucket
+locals {
+  quicksight_default_role = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/service-role/aws-quicksight-service-role-v0"
+}
+
+# bucket policy to allow athena and quicksight to access the bucket
 data "aws_iam_policy_document" "athena_policy" {
   statement {
     effect    = "Allow"
@@ -38,4 +42,25 @@ data "aws_iam_policy_document" "athena_policy" {
       identifiers = ["athena.amazonaws.com"]
     }
   }
+  # Add QuickSight permissions
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket",
+      "s3:PutObject",
+      "s3:GetBucketLocation"
+    ]
+    resources = [
+      "${module.s3_bucket.s3_bucket_arn}",
+      "${module.s3_bucket.s3_bucket_arn}/*"
+    ]
+    principals {
+      type        = "AWS"
+      identifiers = [local.quicksight_default_role]
+    }
+  }
 }
+
+# Get current region
+data "aws_region" "current" {}

@@ -58,6 +58,38 @@ data "aws_iam_policy_document" "kms_key_policy" {
     }
   }
 
+  # QuickSight access
+  statement {
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey"
+    ]
+    resources = [aws_kms_key.cost_analysis.arn]
+    principals {
+      type        = "Service"
+      identifiers = ["quicksight.amazonaws.com"]
+    }
+  }
+
+  # quicksight default role access
+  statement {
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:Encrypt",
+      "kms:GenerateDataKey",
+      "kms:CreateGrant",
+      "kms:RetireGrant"
+    ]
+    resources = [aws_kms_key.cost_analysis.arn]
+    principals {
+      type        = "AWS"
+      identifiers = [local.quicksight_default_role]
+    }
+  }
+
   # S3 access
   statement {
     effect = "Allow"

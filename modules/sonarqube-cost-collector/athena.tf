@@ -48,71 +48,71 @@ resource "aws_glue_catalog_table" "sonarqube_cost_data_raw" {
 }
 
 # Create the view as a virtual table
-resource "aws_glue_catalog_table" "sonarqube_cost_data" {
-  name          = "sonarqube_cost_data"
-  database_name = var.athena_database_name
-  table_type    = "VIRTUAL_VIEW"
+# resource "aws_glue_catalog_table" "sonarqube_cost_data" {
+#   name          = "sonarqube_cost_data"
+#   database_name = var.athena_database_name
+#   table_type    = "VIRTUAL_VIEW"
 
-  parameters = {
-    presto_view = "true"
-    comment     = "View that converts string timestamps to proper timestamps"
-  }
+#   parameters = {
+#     presto_view = "true"
+#     comment     = "View that converts string timestamps to proper timestamps"
+#   }
 
-  storage_descriptor {
-    ser_de_info {
-      serialization_library = "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
-    }
+#   storage_descriptor {
+#     ser_de_info {
+#       serialization_library = "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
+#     }
 
-    columns {
-      name = "extractedTenant"
-      type = "string"
-    }
-    columns {
-      name = "projectKey"
-      type = "string"
-    }
-    columns {
-      name = "projectName"
-      type = "string"
-    }
-    columns {
-      name = "linesOfCode"
-      type = "bigint"
-    }
-    columns {
-      name = "licenseUsagePercentage"
-      type = "decimal(10,6)"
-    }
-    columns {
-      name = "timestamp"
-      type = "timestamp"
-    }
-  }
+#     columns {
+#       name = "extractedTenant"
+#       type = "string"
+#     }
+#     columns {
+#       name = "projectKey"
+#       type = "string"
+#     }
+#     columns {
+#       name = "projectName"
+#       type = "string"
+#     }
+#     columns {
+#       name = "linesOfCode"
+#       type = "bigint"
+#     }
+#     columns {
+#       name = "licenseUsagePercentage"
+#       type = "decimal(10,6)"
+#     }
+#     columns {
+#       name = "timestamp"
+#       type = "timestamp"
+#     }
+#   }
 
-  view_original_text = jsonencode({
-    "originalSql" = "SELECT extractedTenant, projectKey, projectName, linesOfCode, licenseUsagePercentage, from_iso8601_timestamp(timestamp) as timestamp FROM ${var.athena_database_name}.sonarqube_cost_data_raw"
-    "catalog"     = "awsdatacatalog"
-    "schema"      = var.athena_database_name
-    "columns" = [
-      { "name" = "extractedTenant", "type" = "string" },
-      { "name" = "projectKey", "type" = "string" },
-      { "name" = "projectName", "type" = "string" },
-      { "name" = "linesOfCode", "type" = "bigint" },
-      { "name" = "licenseUsagePercentage", "type" = "decimal(10,6)" },
-      { "name" = "timestamp", "type" = "timestamp" }
-    ]
-  })
-  view_expanded_text = jsonencode({
-    "originalSql" = "SELECT extractedTenant, projectKey, projectName, linesOfCode, licenseUsagePercentage, from_iso8601_timestamp(timestamp) as timestamp FROM ${var.athena_database_name}.sonarqube_cost_data_raw"
-    "catalog"     = "awsdatacatalog"
-    "schema"      = var.athena_database_name
-    "columns" = [
-      { "name" = "extractedTenant", "type" = "string" },
-      { "name" = "projectKey", "type" = "string" },
-      { "name" = "projectName", "type" = "string" },
-      { "name" = "linesOfCode", "type" = "bigint" },
-      { "name" = "licenseUsagePercentage", "type" = "decimal(10,6)" },
-      { "name" = "timestamp", "type" = "timestamp" }
-    ]
-  })
-}
+#   view_original_text = jsonencode({
+#     "originalSql" = "SELECT extractedTenant, projectKey, projectName, linesOfCode, licenseUsagePercentage, CAST(from_iso8601_timestamp(timestamp) AS timestamp) as timestamp FROM ${var.athena_database_name}.sonarqube_cost_data_raw"
+#     "catalog"     = "awsdatacatalog"
+#     "schema"      = var.athena_database_name
+#     "columns" = [
+#       { "name" = "extractedTenant", "type" = "string" },
+#       { "name" = "projectKey", "type" = "string" },
+#       { "name" = "projectName", "type" = "string" },
+#       { "name" = "linesOfCode", "type" = "bigint" },
+#       { "name" = "licenseUsagePercentage", "type" = "decimal(10,6)" },
+#       { "name" = "timestamp", "type" = "timestamp" }
+#     ]
+#   })
+#   view_expanded_text = jsonencode({
+#     "originalSql" = "SELECT extractedTenant, projectKey, projectName, linesOfCode, licenseUsagePercentage, CAST(from_iso8601_timestamp(timestamp) AS timestamp) as timestamp FROM ${var.athena_database_name}.sonarqube_cost_data_raw"
+#     "catalog"     = "awsdatacatalog"
+#     "schema"      = var.athena_database_name
+#     "columns" = [
+#       { "name" = "extractedTenant", "type" = "string" },
+#       { "name" = "projectKey", "type" = "string" },
+#       { "name" = "projectName", "type" = "string" },
+#       { "name" = "linesOfCode", "type" = "bigint" },
+#       { "name" = "licenseUsagePercentage", "type" = "decimal(10,6)" },
+#       { "name" = "timestamp", "type" = "timestamp" }
+#     ]
+#   })
+# }
