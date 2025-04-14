@@ -32,3 +32,10 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "create_quicksight_data_resources" {
+  description = "Whether to create a Quicksight data source and dataset"
+  type        = bool
+  default     = true
+}
+

@@ -191,3 +191,57 @@ resource "aws_iam_role_policy" "athena_s3_access" {
   role   = aws_iam_role.athena_role.id
   policy = data.aws_iam_policy_document.athena_s3_access.json
 }
+
+# Quicksight data source
+resource "aws_quicksight_data_source" "cost_analysis" {
+  count          = var.create_quicksight_data_resources ? 1 : 0
+  data_source_id = "${var.workgroup_name}_athena"
+  name           = "${var.workgroup_name}_athena"
+  type           = "ATHENA"
+  parameters {
+    athena {
+      work_group = aws_athena_workgroup.cost_analysis.name
+    }
+  }
+}
+
+# Quicksight dataset
+resource "aws_quicksight_data_set" "cost_analysis" {
+  count          = var.create_quicksight_data_resources ? 1 : 0
+  aws_account_id = data.aws_caller_identity.current.account_id
+  data_set_id    = "${var.workgroup_name}_athena"
+  name           = "${var.workgroup_name}_athena"
+  import_mode    = "SPICE"
+  physical_table_map {
+    physical_table_map_id = "cost-data-1"
+    custom_sql {
+      data_source_arn = aws_quicksight_data_source.cost_analysis[0].arn
+      name            = "sonarqube_cost_data"
+      sql_query       = "SELECT * FROM ${var.database_name}.sonarqube_cost_data"
+      columns {
+        name = "extractedTenant"
+        type = "STRING"
+      }
+      columns {
+        name = "projectKey"
+        type = "STRING"
+      }
+      columns {
+        name = "projectName"
+        type = "STRING"
+      }
+      columns {
+        name = "linesOfCode"
+        type = "INTEGER"
+      }
+      columns {
+        name = "licenseUsagePercentage"
+        type = "DECIMAL"
+      }
+      columns {
+        name = "timestamp"
+        type = "DATETIME"
+      }
+    }
+  }
+}

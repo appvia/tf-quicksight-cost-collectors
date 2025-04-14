@@ -1,6 +1,6 @@
 # Create the Glue catalog table for SonarQube cost data (raw format)
-resource "aws_glue_catalog_table" "sonarqube_cost_data_raw" {
-  name          = "sonarqube_cost_data_raw"
+resource "aws_glue_catalog_table" "sonarqube_cost_data" {
+  name          = "sonarqube_cost_data"
   database_name = var.athena_database_name
 
   table_type = "EXTERNAL_TABLE"
