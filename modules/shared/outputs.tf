@@ -22,3 +22,8 @@ output "kms_key_arn" {
   description = "ARN of the KMS key used for encryption"
   value       = aws_kms_key.cost_analysis.arn
 }
+
+output "quicksight_data_source_arn" {
+  description = "ARN of the Quicksight data source"
+  value       = var.create_quicksight_data_source ? aws_quicksight_data_source.cost_analysis[0].arn : null
+}

@@ -33,9 +33,14 @@ variable "tags" {
   default     = {}
 }
 
-variable "create_quicksight_data_resources" {
-  description = "Whether to create a Quicksight data source and dataset"
+variable "create_quicksight_data_source" {
+  description = "Whether to create a Quicksight data source"
   type        = bool
   default     = true
 }
 
+variable "quicksight_data_source_owners" {
+  description = "Owner of the Quicksight data source"
+  type        = list(string)
+  default     = []
+}
