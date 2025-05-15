@@ -27,3 +27,8 @@ output "quicksight_data_source_arn" {
   description = "ARN of the Quicksight data source"
   value       = var.create_quicksight_data_source ? aws_quicksight_data_source.cost_analysis[0].arn : null
 }
+
+output "usage_data_bucket_name" {
+  description = "Name of the S3 bucket for usage data"
+  value       = var.create_usage_data_bucket ? module.s3_bucket_usage_data[0].s3_bucket_id : null
+}

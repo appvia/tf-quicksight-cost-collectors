@@ -9,7 +9,7 @@ resource "aws_lambda_function" "cost_collector" {
       # SONARQUBE_PORT              = var.sonarqube_port
       # SONARQUBE_SCHEME            = var.sonarqube_scheme
       # SONARQUBE_TOKEN_SECRET_NAME = var.sonarqube_token_secret_name
-      OUTPUT_BUCKET = module.s3_bucket[0].s3_bucket_id
+      OUTPUT_BUCKET = var.usage_data_bucket_name
     }
   }
   filename         = "${path.module}/lambda/lambda.zip"
@@ -19,11 +19,11 @@ resource "aws_lambda_function" "cost_collector" {
 data "aws_iam_policy_document" "cost_collector" {
   statement {
     actions   = ["s3:PutObject"]
-    resources = ["${module.s3_bucket[0].s3_bucket_arn}/*"]
+    resources = ["arn:aws:s3:::${var.usage_data_bucket_name}/*"]
   }
   statement {
     actions   = ["s3:ListBucket"]
-    resources = ["${module.s3_bucket[0].s3_bucket_arn}"]
+    resources = ["arn:aws:s3:::${var.usage_data_bucket_name}"]
   }
 }
 

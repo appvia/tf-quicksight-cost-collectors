@@ -12,7 +12,7 @@ resource "aws_glue_catalog_table" "sonarqube_usage_data" {
   }
 
   storage_descriptor {
-    location      = "s3://${var.bucket_name}/sonarqube/"
+    location      = "s3://${var.usage_data_bucket_name}/sonarqube/"
     input_format  = "com.amazon.ionhiveserde.formats.IonInputFormat"
     output_format = "com.amazon.ionhiveserde.formats.IonOutputFormat"
 

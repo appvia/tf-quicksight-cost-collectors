@@ -59,4 +59,18 @@ data "aws_iam_policy_document" "athena_policy_usage_data" {
       identifiers = [local.quicksight_default_role]
     }
   }
+
+  # Add permissions for usage collector lambdas to put objects in their prefix 
+  dynamic "statement" {
+    for_each = var.collector_lambda_roles
+    content {
+      effect    = "Allow"
+      actions   = ["s3:PutObject"]
+      resources = ["arn:aws:s3:::${var.usage_data_bucket_name}/${statement.value}/*"]
+      principals {
+        type        = "AWS"
+        identifiers = [statement.key]
+      }
+    }
+  }
 }

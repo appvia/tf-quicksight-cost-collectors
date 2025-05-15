@@ -68,3 +68,8 @@ variable "quicksight_data_source_owners" {
   type        = list(string)
   default     = []
 }
+
+variable "collector_lambda_roles" {
+  description = "Map of collector lambda roles to their S3 prefixes"
+  type        = map(string)
+}
