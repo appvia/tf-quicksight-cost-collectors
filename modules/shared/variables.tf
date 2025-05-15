@@ -15,6 +15,30 @@ variable "results_bucket_name" {
   type        = string
 }
 
+variable "cost_data_bucket_name" {
+  description = "Name of the S3 bucket for cost data"
+  type        = string
+  default     = "cost-data-bucket"
+}
+
+variable "create_cost_data_bucket" {
+  description = "Whether to create the cost data S3 bucket"
+  type        = bool
+  default     = true
+}
+
+variable "usage_data_bucket_name" {
+  description = "Name of the S3 bucket for usage data"
+  type        = string
+  default     = "usage-data-bucket"
+}
+
+variable "create_usage_data_bucket" {
+  description = "Whether to create the usage data S3 bucket"
+  type        = bool
+  default     = true
+}
+
 variable "athena_role_name" {
   description = "Name of the IAM role for Athena"
   type        = string

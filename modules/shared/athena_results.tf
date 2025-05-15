@@ -1,4 +1,4 @@
-module "s3_bucket" {
+module "s3_bucket_results" {
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "4.6.0"
 
@@ -6,7 +6,7 @@ module "s3_bucket" {
   attach_policy    = true
   force_destroy    = false
   object_ownership = "BucketOwnerEnforced"
-  policy           = data.aws_iam_policy_document.athena_policy.json
+  policy           = data.aws_iam_policy_document.athena_policy_results.json
 
   server_side_encryption_configuration = {
     rule = {
@@ -23,11 +23,11 @@ locals {
 }
 
 # bucket policy to allow athena and quicksight to access the bucket
-data "aws_iam_policy_document" "athena_policy" {
+data "aws_iam_policy_document" "athena_policy_results" {
   statement {
     effect    = "Allow"
     actions   = ["s3:PutObject"]
-    resources = ["${module.s3_bucket.s3_bucket_arn}/*"]
+    resources = ["${module.s3_bucket_results.s3_bucket_arn}/*"]
     principals {
       type        = "Service"
       identifiers = ["athena.amazonaws.com"]
@@ -36,7 +36,7 @@ data "aws_iam_policy_document" "athena_policy" {
   statement {
     effect    = "Allow"
     actions   = ["s3:ListBucket"]
-    resources = ["${module.s3_bucket.s3_bucket_arn}"]
+    resources = ["${module.s3_bucket_results.s3_bucket_arn}"]
     principals {
       type        = "Service"
       identifiers = ["athena.amazonaws.com"]
@@ -52,8 +52,8 @@ data "aws_iam_policy_document" "athena_policy" {
       "s3:GetBucketLocation"
     ]
     resources = [
-      "${module.s3_bucket.s3_bucket_arn}",
-      "${module.s3_bucket.s3_bucket_arn}/*"
+      "${module.s3_bucket_results.s3_bucket_arn}",
+      "${module.s3_bucket_results.s3_bucket_arn}/*"
     ]
     principals {
       type        = "AWS"
