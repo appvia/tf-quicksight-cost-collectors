@@ -68,7 +68,7 @@ def lambda_handler(event, context):
 
             # Create a structured S3 key with project key as prefix
             # This helps with Athena partitioning
-            s3_key = f"projects/{project['projectKey']}_{timestamp_filename}.json"  # Keep filename format for consistency
+            s3_key = f"sonarqube/{project['projectKey']}_{timestamp_filename}.json"  # Keep filename format for consistency
 
             # Upload individual project data to S3
             s3_client.put_object(
