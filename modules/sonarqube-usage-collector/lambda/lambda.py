@@ -25,11 +25,12 @@ def handler(event, context):
             data = {
                 "projects": [
                     {
-                        "projectKey": f"mock_project_{i}",
-                        "projectName": f"Mock Project {i}",
+                        "projectKey": [f"mock-project-{i}", "test-project-{i}"][
+                            random.randint(0, 1)
+                        ],
+                        "projectName": f"Project {i}",
                         "linesOfCode": random.randint(1000, 10000),
-                        # 2 decimal places
-                        "licenseUsagePercentage": round(random.uniform(0, 100), 2),
+                        "licenseUsagePercentage": round(random.uniform(0, 25), 2),
                     }
                     for i in range(1, 6)
                 ]
@@ -80,19 +81,19 @@ def handler(event, context):
         for project in data["projects"]:
             # Extract only the required fields
             project_data = {
-                "extractedTenant": project["projectName"].split("-")[
+                "extracted_tenant": project["projectName"].split("-")[
                     0
                 ],  # TODO: make this more robust
-                "projectKey": project["projectKey"],
-                "projectName": project["projectName"],
-                "linesOfCode": project["linesOfCode"],
-                "licenseUsagePercentage": project["licenseUsagePercentage"],
+                "project_key": project["projectKey"],
+                "project_name": project["projectName"],
+                "lines_of_code": project["linesOfCode"],
+                "license_usage_percentage": project["licenseUsagePercentage"],
                 "timestamp": timestamp_iso,  # Use ISO format for the data
             }
 
             # Create a structured S3 key with project key as prefix
             # This helps with Athena partitioning
-            s3_key = f"sonarqube/{partition_month}/{project['projectKey']}/{project['projectKey']}_{timestamp_filename}.json"  # Keep filename format for consistency
+            s3_key = f"sonarqube/{partition_month}/{project['projectKey']}_{timestamp_filename}.json"  # Keep filename format for consistency
 
             # Upload individual project data to S3
             s3_client.put_object(
