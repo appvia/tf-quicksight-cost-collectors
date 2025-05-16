@@ -7,25 +7,29 @@ resource "aws_glue_catalog_table" "sonarqube_usage_data" {
 
   parameters = {
     EXTERNAL         = "TRUE"
-    "classification" = "ion"
-    "typeOfData"     = "file"
+    "classification" = "json"
   }
 
   storage_descriptor {
-    location      = "s3://${var.usage_data_bucket_name}/sonarqube/"
-    input_format  = "com.amazon.ionhiveserde.formats.IonInputFormat"
-    output_format = "com.amazon.ionhiveserde.formats.IonOutputFormat"
+    location = "s3://${var.usage_data_bucket_name}/sonarqube/"
+
+    # Change to the OpenX Hive input format which supports multiline JSON
+    input_format  = "org.apache.hadoop.mapred.TextInputFormat"
+    output_format = "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
 
     ser_de_info {
-      serialization_library = "com.amazon.ionhiveserde.IonHiveSerDe"
+      serialization_library = "org.openx.data.jsonserde.JsonSerDe"
+      parameters = {
+        # Add these parameters to support multiline JSON
+        "ignore.malformed.json" = "true"
+        "dots.in.keys"          = "false"
+        "case.insensitive"      = "true"
+        "mapping"               = "TRUE"
+      }
     }
 
     columns {
       name = "extractedTenant"
-      type = "string"
-    }
-    columns {
-      name = "projectKey"
       type = "string"
     }
     columns {
@@ -44,6 +48,16 @@ resource "aws_glue_catalog_table" "sonarqube_usage_data" {
       name = "timestamp"
       type = "string"
     }
+  }
+
+  partition_keys {
+    name = "billingPeriod"
+    type = "string"
+  }
+
+  partition_keys {
+    name = "projectKey"
+    type = "string"
   }
 }
 

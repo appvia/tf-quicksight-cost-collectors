@@ -58,6 +58,27 @@ data "aws_iam_policy_document" "kms_key_policy" {
     }
   }
 
+  # Athena access
+  dynamic "statement" {
+    for_each = var.collector_lambda_roles
+    content {
+      effect = "Allow"
+      actions = [
+        "kms:Decrypt",
+        "kms:DescribeKey",
+        "kms:Encrypt",
+        "kms:GenerateDataKey",
+        "kms:ReEncryptFrom",
+        "kms:ReEncryptTo"
+      ]
+      resources = [aws_kms_key.cost_analysis.arn]
+      principals {
+        type        = "AWS"
+        identifiers = [statement.key]
+      }
+    }
+  }
+
   # QuickSight access
   statement {
     effect = "Allow"

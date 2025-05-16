@@ -38,3 +38,9 @@ variable "quicksight_data_set_permissions" {
   }))
   default = []
 }
+
+
+variable "usage_data_bucket_key_arn" {
+  description = "ARN of the KMS key for the usage data bucket"
+  type        = string
+}

@@ -21,9 +21,15 @@ data "aws_iam_policy_document" "cost_collector" {
     actions   = ["s3:PutObject"]
     resources = ["arn:aws:s3:::${var.usage_data_bucket_name}/*"]
   }
+
   statement {
     actions   = ["s3:ListBucket"]
     resources = ["arn:aws:s3:::${var.usage_data_bucket_name}"]
+  }
+
+  statement {
+    actions   = ["kms:Encrypt"]
+    resources = [var.usage_data_bucket_key_arn]
   }
 }
 
