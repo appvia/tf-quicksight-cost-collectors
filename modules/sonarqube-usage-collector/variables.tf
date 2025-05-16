@@ -44,3 +44,9 @@ variable "usage_data_bucket_key_arn" {
   description = "ARN of the KMS key for the usage data bucket"
   type        = string
 }
+
+variable "mock_mode" {
+  description = "Enable mock mode for testing the lambda function"
+  type        = bool
+  default     = false
+}

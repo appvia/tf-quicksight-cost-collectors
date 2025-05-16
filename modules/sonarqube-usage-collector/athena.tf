@@ -89,7 +89,7 @@ resource "aws_glue_catalog_table" "sonarqube_usage_data" {
 }
 
 # Quicksight dataset
-resource "aws_quicksight_data_set" "cost_analysis" {
+resource "aws_quicksight_data_set" "sonarqube_usage_data" {
   count          = var.create_quicksight_data_set ? 1 : 0
   aws_account_id = data.aws_caller_identity.current.account_id
   data_set_id    = "${var.athena_workgroup_name}_athena"
@@ -99,26 +99,26 @@ resource "aws_quicksight_data_set" "cost_analysis" {
     physical_table_map_id = "cost-data"
     custom_sql {
       data_source_arn = var.quicksight_data_source_arn
-      name            = "sonarqube_cost_data"
-      sql_query       = "SELECT * FROM ${var.athena_database_name}.sonarqube_cost_data"
+      name            = "sonarqube_usage_data"
+      sql_query       = "SELECT * FROM ${var.athena_database_name}.sonarqube_usage_data"
       columns {
-        name = "extractedTenant"
+        name = "extracted_tenant"
         type = "STRING"
       }
       columns {
-        name = "projectKey"
+        name = "project_key"
         type = "STRING"
       }
       columns {
-        name = "projectName"
+        name = "project_name"
         type = "STRING"
       }
       columns {
-        name = "linesOfCode"
+        name = "lines_of_code"
         type = "INTEGER"
       }
       columns {
-        name = "licenseUsagePercentage"
+        name = "license_usage_percentage"
         type = "DECIMAL"
       }
       columns {

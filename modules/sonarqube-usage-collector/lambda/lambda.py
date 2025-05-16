@@ -25,10 +25,10 @@ def handler(event, context):
             data = {
                 "projects": [
                     {
-                        "projectKey": [f"mock-project-{i}", "test-project-{i}"][
+                        "projectName": [f"mock-project-{i}", f"test-project-{i}"][
                             random.randint(0, 1)
                         ],
-                        "projectName": f"Project {i}",
+                        "projectKey": f"PK-{i}",
                         "linesOfCode": random.randint(1000, 10000),
                         "licenseUsagePercentage": round(random.uniform(0, 25), 2),
                     }
