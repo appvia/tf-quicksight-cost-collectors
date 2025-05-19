@@ -61,6 +61,3 @@ data "aws_iam_policy_document" "athena_policy_results" {
     }
   }
 }
-
-# Get current region
-data "aws_region" "current" {}

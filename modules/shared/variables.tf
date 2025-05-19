@@ -69,9 +69,13 @@ variable "quicksight_data_source_owners" {
   default     = []
 }
 
-variable "collector_lambda_roles" {
-  description = "Map of collector lambda roles to their S3 prefixes"
-  type        = map(string)
+variable "enabled_collectors" {
+  description = "List of enabled collectors"
+  type = list(object({
+    name        = string
+    lambda_role = string
+    s3_prefix   = string
+  }))
 }
 
 variable "quicksight_data_set_permissions" {

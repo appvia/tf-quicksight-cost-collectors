@@ -62,14 +62,14 @@ data "aws_iam_policy_document" "athena_policy_usage_data" {
 
   # Add permissions for usage collector lambdas to put objects in their prefix 
   dynamic "statement" {
-    for_each = var.collector_lambda_roles
+    for_each = var.enabled_collectors
     content {
       effect    = "Allow"
       actions   = ["s3:PutObject"]
-      resources = ["arn:aws:s3:::${var.usage_data_bucket_name}/${statement.value}/*"]
+      resources = ["arn:aws:s3:::${var.usage_data_bucket_name}/${statement.value.s3_prefix}/*"]
       principals {
         type        = "AWS"
-        identifiers = [statement.key]
+        identifiers = [statement.value.lambda_role]
       }
     }
   }

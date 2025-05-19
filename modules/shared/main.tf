@@ -60,7 +60,7 @@ data "aws_iam_policy_document" "kms_key_policy" {
 
   # Athena access
   dynamic "statement" {
-    for_each = var.collector_lambda_roles
+    for_each = var.enabled_collectors
     content {
       effect = "Allow"
       actions = [
@@ -74,7 +74,7 @@ data "aws_iam_policy_document" "kms_key_policy" {
       resources = [aws_kms_key.cost_analysis.arn]
       principals {
         type        = "AWS"
-        identifiers = [statement.key]
+        identifiers = [statement.value.lambda_role]
       }
     }
   }
@@ -129,9 +129,6 @@ data "aws_iam_policy_document" "kms_key_policy" {
     }
   }
 }
-
-# Get current AWS account ID
-data "aws_caller_identity" "current" {}
 
 resource "aws_kms_key_policy" "cost_analysis" {
   key_id = aws_kms_key.cost_analysis.id
