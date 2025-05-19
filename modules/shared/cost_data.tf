@@ -109,3 +109,52 @@ resource "aws_glue_catalog_table" "application_cost_data" {
     }
   }
 }
+
+# Quicksight dataset
+resource "aws_quicksight_data_set" "sonarqube_usage_data" {
+  count          = var.create_cost_data_bucket && var.create_quicksight_data_source ? 1 : 0
+  aws_account_id = data.aws_caller_identity.current.account_id
+  data_set_id    = "application_cost_data_athena"
+  name           = "application_cost_data_athena"
+  import_mode    = "SPICE"
+  physical_table_map {
+    physical_table_map_id = "cost-data"
+    custom_sql {
+      data_source_arn = aws_quicksight_data_source.cost_analysis[0].arn
+      name            = "application_cost_data"
+      sql_query       = "SELECT * FROM ${aws_athena_database.cost_analysis.name}.application_cost_data"
+      columns {
+        name = "application_name"
+        type = "STRING"
+      }
+      columns {
+        name = "source_annual_cost"
+        type = "INTEGER"
+      }
+      columns {
+        name = "source_currency"
+        type = "STRING"
+      }
+      columns {
+        name = "gbp_annual_cost"
+        type = "INTEGER"
+      }
+      columns {
+        name = "start_date"
+        type = "STRING"
+      }
+      columns {
+        name = "end_date"
+        type = "STRING"
+      }
+    }
+  }
+
+  dynamic "permissions" {
+    for_each = toset(var.quicksight_data_set_permissions)
+    content {
+      principal = permissions.value.principal
+      actions   = permissions.value.actions
+    }
+  }
+}

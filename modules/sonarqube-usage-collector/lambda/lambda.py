@@ -29,8 +29,8 @@ def handler(event, context):
                             random.randint(0, 1)
                         ],
                         "projectKey": f"PK-{i}",
-                        "linesOfCode": random.randint(1000, 10000),
-                        "licenseUsagePercentage": round(random.uniform(0, 25), 2),
+                        "linesOfCode": random.randint(900, 99999),
+                        "licenseUsagePercentage": round(random.uniform(0, 3), 2),
                     }
                     for i in range(1, 6)
                 ]

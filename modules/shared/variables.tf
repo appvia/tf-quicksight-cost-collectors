@@ -73,3 +73,12 @@ variable "collector_lambda_roles" {
   description = "Map of collector lambda roles to their S3 prefixes"
   type        = map(string)
 }
+
+variable "quicksight_data_set_permissions" {
+  description = "Permissions for the Quicksight data set"
+  type = list(object({
+    principal = string
+    actions   = list(string)
+  }))
+  default = []
+}
