@@ -110,7 +110,7 @@ resource "aws_glue_catalog_table" "application_cost_data" {
   }
 }
 
-# Quicksight dataset
+# Quicksight data_set
 resource "aws_quicksight_data_set" "sonarqube_usage_data" {
   count          = var.create_cost_data_bucket && var.create_quicksight_data_source ? 1 : 0
   aws_account_id = data.aws_caller_identity.current.account_id
