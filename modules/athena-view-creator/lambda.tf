@@ -1,0 +1,37 @@
+# Create Lambda function for processing SQL files and executing Athena queries
+resource "aws_lambda_function" "athena_view_creator" {
+  function_name = "athena-view-creator"
+  description   = "Executes Athena queries from SQL files stored in S3"
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "lambda.lambda_handler"
+  runtime       = "python3.12"
+  timeout       = var.lambda_timeout
+  memory_size   = var.lambda_memory_size
+
+  filename         = "${path.module}/lambda/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/lambda/lambda.zip")
+
+  environment {
+    variables = {
+      ATHENA_WORKGROUP = var.athena_workgroup
+      ATHENA_DATABASE  = var.athena_database
+    }
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "Athena View Creator"
+    }
+  )
+}
+
+# Create CloudWatch log group for Lambda logs
+resource "aws_cloudwatch_log_group" "lambda_logs" {
+  count = var.create_lambda_log_group ? 1 : 0
+
+  name              = "/aws/lambda/athena-view-creator"
+  retention_in_days = var.lambda_log_retention_days
+
+  tags = var.tags
+}
