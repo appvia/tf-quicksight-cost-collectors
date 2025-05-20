@@ -84,18 +84,14 @@ resource "aws_iam_policy" "lambda_policy" {
           "s3:ListBucketMultipartUploads",
           "s3:ListMultipartUploadParts",
           "s3:AbortMultipartUpload",
-          "s3:PutObject"
+          "s3:PutObject",
+          "s3:PutObjectAcl"
         ]
-        Effect   = "Allow"
-        Resource = "*"
-        Condition = {
-          StringLike = {
-            "s3:prefix" = [
-              "*/",
-              "*/athena/query-results/*"
-            ]
-          }
-        }
+        Effect = "Allow"
+        Resource = [
+          "arn:aws:s3:::${var.athena_results_bucket_name}",
+          "arn:aws:s3:::${var.athena_results_bucket_name}/*"
+        ]
       }
     ]
   })

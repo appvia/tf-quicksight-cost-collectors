@@ -72,6 +72,7 @@ All three SQL files will be uploaded to the bucket, with their relative paths pr
 | Name               | Description                                             | Type          | Default     | Required |
 | ------------------ | ------------------------------------------------------- | ------------- | ----------- | :------: |
 | athena_database    | Name of the Athena database where views will be created | `string`      | n/a         |   yes    |
+| athena_results_bucket_name | Name of the S3 bucket where Athena query results will be stored | `string` | n/a | yes |
 | bucket_name        | Name of the S3 bucket to create                         | `string`      | `""`        |    no    |
 | athena_workgroup   | Name of the Athena workgroup                            | `string`      | `"primary"` |    no    |
 | lambda_timeout     | Timeout for the Lambda function in seconds              | `number`      | `300`       |    no    |

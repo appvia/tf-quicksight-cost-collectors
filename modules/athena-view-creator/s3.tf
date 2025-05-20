@@ -79,7 +79,6 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
   lambda_function {
     lambda_function_arn = aws_lambda_function.athena_view_creator.arn
     events              = ["s3:ObjectCreated:*", "s3:ObjectRemoved:*"]
-    filter_suffix       = ".sql"
   }
 
   depends_on = [aws_lambda_permission.allow_bucket]

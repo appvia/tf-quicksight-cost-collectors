@@ -23,6 +23,11 @@ variable "athena_database" {
   type        = string
 }
 
+variable "athena_results_bucket_name" {
+  description = "Name of the S3 bucket where Athena query results will be stored. The Lambda role will be granted permissions to write to this bucket."
+  type        = string
+}
+
 variable "lambda_timeout" {
   description = "Timeout for the Lambda function in seconds"
   type        = number
