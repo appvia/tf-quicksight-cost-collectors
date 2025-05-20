@@ -32,3 +32,8 @@ output "usage_data_bucket_name" {
   description = "Name of the S3 bucket for usage data"
   value       = var.create_usage_data_bucket ? module.s3_bucket_usage_data[0].s3_bucket_id : null
 }
+
+output "results_bucket_name" {
+  description = "Name of the S3 bucket for Athena query results"
+  value       = module.s3_bucket_results.s3_bucket_id
+}
