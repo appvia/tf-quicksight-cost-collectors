@@ -10,7 +10,7 @@ resource "aws_quicksight_data_set" "sonarqube_cost_usage" {
     custom_sql {
       data_source_arn = var.quicksight_data_source_arn
       name            = "sonarqube_cost_usage"
-      sql_query       = "SELECT * FROM ${var.athena_database_name}.sonarqube_cost_usage_view"
+      sql_query       = "SELECT * FROM ${var.athena_database_name}.sonarqube_daily_cost_usage_view"
 
       # Define all the columns from the view
       columns {
@@ -59,6 +59,65 @@ resource "aws_quicksight_data_set" "sonarqube_cost_usage" {
       }
       columns {
         name = "project_daily_cost"
+        type = "DECIMAL"
+      }
+    }
+  }
+
+  # Set permissions for the dataset
+  dynamic "permissions" {
+    for_each = var.quicksight_data_set_permissions != null ? toset(var.quicksight_data_set_permissions) : []
+    content {
+      principal = permissions.value.principal
+      actions   = permissions.value.actions
+    }
+  }
+}
+
+resource "aws_quicksight_data_set" "sonarqube_billing_period_usage" {
+  count          = var.create_quicksight_data_set ? 1 : 0
+  aws_account_id = data.aws_caller_identity.current.account_id
+  data_set_id    = "sonarqube_billing_period_usage"
+  name           = "SonarQube Billing Period Usage Analysis"
+  import_mode    = "SPICE"
+
+  physical_table_map {
+    physical_table_map_id = "sonarqube-billing-period-view"
+    custom_sql {
+      data_source_arn = var.quicksight_data_source_arn
+      name            = "sonarqube_billing_period_usage"
+      sql_query       = "SELECT * FROM ${var.athena_database_name}.sonarqube_billing_period_cost_usage_view"
+
+      columns {
+        name = "billing_period"
+        type = "STRING"
+      }
+      columns {
+        name = "tenant"
+        type = "STRING"
+      }
+      columns {
+        name = "sonarqube_project_key"
+        type = "STRING"
+      }
+      columns {
+        name = "sonarqube_project_name"
+        type = "STRING"
+      }
+      columns {
+        name = "avg_daily_project_cost"
+        type = "DECIMAL"
+      }
+      columns {
+        name = "days_in_billing_period"
+        type = "INTEGER"
+      }
+      columns {
+        name = "data_points_in_month"
+        type = "INTEGER"
+      }
+      columns {
+        name = "extrapolated_monthly_project_cost"
         type = "DECIMAL"
       }
     }
