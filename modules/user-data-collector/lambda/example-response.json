@@ -1,0 +1,28 @@
+{
+    "users": [
+        {
+            "ou_dn": "OU=Users,DC=example,DC=com",
+            "username": "doe_j",
+            "first_name": "John",
+            "last_name": "Doe",
+            "email": "doej@example.com",
+            "tenant": "test",
+            "account_status": "enabled",
+            "groups": [
+                "test-group"
+            ]
+        },
+        {
+            "ou_dn": "OU=Users,DC=example,DC=com",
+            "username": "smith_j",
+            "first_name": "Jane",
+            "last_name": "Smith",
+            "email": "smithj@example.com",
+            "tenant": "test2",
+            "account_status": "disabled",
+            "groups": [
+                "test-group"
+            ]
+        }
+    ]
+}

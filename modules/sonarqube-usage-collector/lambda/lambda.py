@@ -3,103 +3,131 @@ import boto3
 import os
 import datetime
 import urllib3
+import random
+from typing import Dict, List, Any
+
+
+def load_configuration() -> Dict[str, Any]:
+    """Load and validate environment variables."""
+    config = {
+        "sonarqube_domain": os.environ.get("SONARQUBE_DOMAIN"),
+        "sonarqube_port": os.environ.get("SONARQUBE_PORT"),
+        "sonarqube_scheme": os.environ.get("SONARQUBE_SCHEME"),
+        "sonarqube_token_secret_name": os.environ.get("SONARQUBE_TOKEN_SECRET_NAME"),
+        "output_bucket": os.environ.get("OUTPUT_BUCKET"),
+        "mock_mode": os.environ.get("MOCK_MODE", "false").lower() == "true",
+    }
+
+    # Validate required configuration (skip token validation in mock mode)
+    required_fields = [
+        "sonarqube_domain",
+        "sonarqube_port",
+        "sonarqube_scheme",
+        "output_bucket",
+    ]
+    if not config["mock_mode"]:
+        required_fields.append("sonarqube_token_secret_name")
+
+    missing_fields = [field for field in required_fields if not config[field]]
+
+    if missing_fields:
+        raise ValueError(
+            f"Missing required environment variables: {', '.join(missing_fields)}"
+        )
+
+    return config
+
+
+def generate_mock_data() -> Dict[str, List[Dict[str, Any]]]:
+    """Generate mock project data for testing."""
+    return {
+        "projects": [
+            {
+                "projectName": [f"mock-project-{i}", f"test-project-{i}"][
+                    random.randint(0, 1)
+                ],
+                "projectKey": f"PK-{i}",
+                "linesOfCode": random.randint(900, 99999),
+                "licenseUsagePercentage": round(random.uniform(0, 3), 2),
+            }
+            for i in range(1, 6)
+        ]
+    }
+
+
+def fetch_sonarqube_data(api_url: str, token: str) -> Dict[str, Any]:
+    """Fetch project data from SonarQube API."""
+    http = urllib3.PoolManager()
+
+    # Make request using basic auth (token as username, empty password)
+    response = http.request(
+        "GET",
+        api_url,
+        basic_auth=(token, ""),
+    )
+
+    if response.status != 200:
+        raise Exception(f"Failed to fetch data from SonarQube API: {response.status}")
+
+    return json.loads(response.data.decode("utf-8"))
+
+
+def process_project_data(project: Dict[str, Any], timestamp_iso: str) -> Dict[str, Any]:
+    """Process and transform project data from SonarQube API."""
+    return {
+        "extracted_tenant": project["projectName"].split("-")[
+            0
+        ],  # TODO: make this more robust
+        "project_key": project["projectKey"],
+        "project_name": project["projectName"],
+        "lines_of_code": project["linesOfCode"],
+        "license_usage_percentage": project["licenseUsagePercentage"],
+        "timestamp": timestamp_iso,
+    }
 
 
 def handler(event, context):
-    # Initialize S3 client
-    s3_client = boto3.client("s3")
-
-    # Get environment variables
-    sonarqube_domain = os.environ.get("SONARQUBE_DOMAIN")
-    sonarqube_port = os.environ.get("SONARQUBE_PORT")
-    sonarqube_scheme = os.environ.get("SONARQUBE_SCHEME")
-    sonarqube_token_secret_name = os.environ.get("SONARQUBE_TOKEN_SECRET_NAME")
-    output_bucket = os.environ.get("OUTPUT_BUCKET")
-    mock_mode = os.environ.get("MOCK_MODE", "false").lower()
-
+    """Main Lambda handler function."""
     try:
-        if mock_mode == "true":
-            # Mock response for testing
-            import random
+        # Load configuration
+        config = load_configuration()
 
-            data = {
-                "projects": [
-                    {
-                        "projectName": [f"mock-project-{i}", f"test-project-{i}"][
-                            random.randint(0, 1)
-                        ],
-                        "projectKey": f"PK-{i}",
-                        "linesOfCode": random.randint(900, 99999),
-                        "licenseUsagePercentage": round(random.uniform(0, 3), 2),
-                    }
-                    for i in range(1, 6)
-                ]
-            }
-
-        else:
-            # Construct the API URL
-            api_url = f"{sonarqube_scheme}://{sonarqube_domain}:{sonarqube_port}/api/projects/license_usage"
-
-            # Get the SonarQube token from secretsmanager
-            secret_manager_client = boto3.client("secretsmanager")
-            response = secret_manager_client.get_secret_value(
-                SecretId=sonarqube_token_secret_name
-            )
-            # the token is used as a basic auth username
-            # for example with curl:
-            # curl -u <token>: http://<sonarqube_domain>:<sonarqube_port>/api/projects/license_usage
-            sonarqube_token = response["SecretString"]
-
-            # Create a urllib3 PoolManager
-            http = urllib3.PoolManager()
-
-            # Make request to SonarQube API using urllib3's built-in basic_auth parameter
-            # This automatically handles the base64 encoding for Basic Authentication
-            response = http.request(
-                "GET",
-                api_url,
-                basic_auth=(
-                    sonarqube_token,
-                    "",
-                ),  # username is token, password is empty
-            )
-
-            # Parse the JSON response
-            data = json.loads(response.data.decode("utf-8"))
-
-        # Track successful uploads
-        uploaded_files = []
-
-        # Generate timestamp in ISO format
+        # Generate timestamps
         current_time = datetime.datetime.now()
         timestamp_iso = current_time.isoformat()
         timestamp_filename = current_time.strftime("%Y%m%d_%H%M")
-
         partition_month = current_time.strftime("%Y-%m")
+
+        # Get project data (either mock or from API)
+        if config["mock_mode"]:
+            data = generate_mock_data()
+        else:
+            # Get SonarQube token from secrets manager
+            secret_manager_client = boto3.client("secretsmanager")
+            response = secret_manager_client.get_secret_value(
+                SecretId=config["sonarqube_token_secret_name"]
+            )
+            sonarqube_token = response["SecretString"]
+
+            # Construct API URL and fetch data
+            api_url = f"{config['sonarqube_scheme']}://{config['sonarqube_domain']}:{config['sonarqube_port']}/api/projects/license_usage"
+            data = fetch_sonarqube_data(api_url, sonarqube_token)
+
+        # Initialize S3 client and process projects
+        s3_client = boto3.client("s3")
+        uploaded_files = []
 
         # Process each project individually
         for project in data["projects"]:
-            # Extract only the required fields
-            project_data = {
-                "extracted_tenant": project["projectName"].split("-")[
-                    0
-                ],  # TODO: make this more robust
-                "project_key": project["projectKey"],
-                "project_name": project["projectName"],
-                "lines_of_code": project["linesOfCode"],
-                "license_usage_percentage": project["licenseUsagePercentage"],
-                "timestamp": timestamp_iso,  # Use ISO format for the data
-            }
+            project_data = process_project_data(project, timestamp_iso)
 
-            # Create a structured S3 key with project key as prefix
-            # This helps with Athena partitioning
-            s3_key = f"sonarqube/{partition_month}/{project['projectKey']}_{timestamp_filename}.json"  # Keep filename format for consistency
-
-            # Upload individual project data to S3
+            # Upload to S3
+            s3_key = f"sonarqube/{partition_month}/{project['projectKey']}_{timestamp_filename}.json"
             s3_client.put_object(
-                Bucket=output_bucket, Key=s3_key, Body=json.dumps(project_data)
+                Bucket=config["output_bucket"],
+                Key=s3_key,
+                Body=json.dumps(project_data),
             )
-
             uploaded_files.append(s3_key)
 
         return {
