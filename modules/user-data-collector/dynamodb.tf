@@ -15,4 +15,10 @@ resource "aws_dynamodb_table" "user_data" {
   }
 
   hash_key = "email"
+
+  global_secondary_index {
+    name            = "tenant-index"
+    hash_key        = "tenant"
+    projection_type = "ALL"
+  }
 }
