@@ -36,7 +36,7 @@ data "aws_iam_policy_document" "athena_policy_results" {
   statement {
     effect    = "Allow"
     actions   = ["s3:ListBucket"]
-    resources = ["${module.s3_bucket_results.s3_bucket_arn}"]
+    resources = [module.s3_bucket_results.s3_bucket_arn]
     principals {
       type        = "Service"
       identifiers = ["athena.amazonaws.com"]
@@ -52,7 +52,7 @@ data "aws_iam_policy_document" "athena_policy_results" {
       "s3:GetBucketLocation"
     ]
     resources = [
-      "${module.s3_bucket_results.s3_bucket_arn}",
+      module.s3_bucket_results.s3_bucket_arn,
       "${module.s3_bucket_results.s3_bucket_arn}/*"
     ]
     principals {

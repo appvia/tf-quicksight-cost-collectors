@@ -217,6 +217,7 @@ resource "aws_quicksight_data_source" "cost_analysis" {
   data_source_id = "${var.workgroup_name}_athena"
   name           = "${var.workgroup_name}_athena"
   type           = "ATHENA"
+
   parameters {
     athena {
       work_group = aws_athena_workgroup.cost_analysis.name
