@@ -24,13 +24,12 @@ def load_configuration() -> Dict[str, Any]:
         "sonarqube_port",
         "sonarqube_scheme",
         "output_bucket",
+        "sonarqube_token_secret_name",
     ]
-    if not config["mock_mode"]:
-        required_fields.append("sonarqube_token_secret_name")
 
     missing_fields = [field for field in required_fields if not config[field]]
 
-    if missing_fields:
+    if missing_fields and not config["mock_mode"]:
         raise ValueError(
             f"Missing required environment variables: {', '.join(missing_fields)}"
         )

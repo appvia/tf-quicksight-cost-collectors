@@ -36,7 +36,7 @@ def load_configuration() -> Dict[str, Any]:
     ]
     missing_fields = [field for field in required_fields if not config[field]]
 
-    if missing_fields:
+    if missing_fields and not config["mock_mode"]:
         raise ValueError(
             f"Missing required environment variables: {', '.join(missing_fields)}"
         )
