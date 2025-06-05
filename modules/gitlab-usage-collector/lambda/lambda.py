@@ -66,11 +66,11 @@ def process_user_data(user: Dict[str, Any], timestamp_iso: str) -> Dict[str, Any
     """Process and transform user data from GitLab API."""
     user_extract = {
         "id": user.get("id"),
-        "collection_timestamp": timestamp_iso,
         "email": user.get("email"),
         "name": user.get("name"),
         "username": user.get("username"),
         "state": user.get("state"),
+        "collection_timestamp": timestamp_iso,
     }
 
     # Try to get tenant information
