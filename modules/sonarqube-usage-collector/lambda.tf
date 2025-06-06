@@ -1,6 +1,6 @@
 resource "aws_lambda_function" "usage_collector" {
   function_name = "sonarqube-usage-collector"
-  handler       = "lambda.handler"
+  handler       = "collector.handler"
   runtime       = "python3.12"
   role          = aws_iam_role.usage_collector.arn
 

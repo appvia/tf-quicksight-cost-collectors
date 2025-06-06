@@ -1,6 +1,6 @@
 resource "aws_lambda_function" "collector" {
   function_name = "user-data-collector"
-  handler       = "lambda.handler"
+  handler       = "collector.handler"
   runtime       = "python3.12"
   role          = aws_iam_role.collector.arn
 

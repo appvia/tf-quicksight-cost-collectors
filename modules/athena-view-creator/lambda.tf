@@ -3,7 +3,7 @@ resource "aws_lambda_function" "athena_view_creator" {
   function_name = "athena-view-creator"
   description   = "Executes Athena queries from SQL files stored in S3"
   role          = aws_iam_role.lambda_role.arn
-  handler       = "lambda.lambda_handler"
+  handler       = "collector.handler"
   runtime       = "python3.12"
   timeout       = var.lambda_timeout
   memory_size   = var.lambda_memory_size
