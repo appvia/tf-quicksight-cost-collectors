@@ -27,32 +27,32 @@ resource "aws_glue_catalog_table" "sonarqube_usage_data" {
 
     # Definition of the data columns within your JSON files
     columns {
-      name    = "sonarqube_extracted_tenant"
+      name    = "tenant"
       type    = "string"
       comment = "The tenant extracted from the source."
     }
     columns {
-      name    = "sonarqube_project_name"
+      name    = "project_name"
       type    = "string"
       comment = "The display name of the project."
     }
     columns {
-      name    = "sonarqube_project_key"
+      name    = "project_key"
       type    = "string"
       comment = "The unique key for the project (data field)."
     }
     columns {
-      name    = "sonarqube_lines_of_code"
+      name    = "lines_of_code"
       type    = "bigint"
       comment = "Number of lines of code in the project."
     }
     columns {
-      name    = "sonarqube_license_usage_percentage"
+      name    = "license_usage_percentage"
       type    = "double"
       comment = "Percentage of license usage."
     }
     columns {
-      name    = "sonarqube_collection_timestamp"
+      name    = "timestamp"
       type    = "timestamp" # ISO 8601 timestamps like "2025-05-16T16:05:34.228361"
       comment = "Timestamp of the data extraction."
     }
@@ -68,12 +68,12 @@ resource "aws_glue_catalog_table" "sonarqube_usage_data" {
       parameters = {
         "serialization.format" = "1"
 
-        "mapping.sonarqube_extracted_tenant"         = "extracted_tenant"
-        "mapping.sonarqube_project_key"              = "project_key"
-        "mapping.sonarqube_project_name"             = "project_name"
-        "mapping.sonarqube_lines_of_code"            = "lines_of_code"
-        "mapping.sonarqube_license_usage_percentage" = "license_usage_percentage"
-        "mapping.sonarqube_collection_timestamp"     = "timestamp"
+        "mapping.tenant"                   = "tenant"
+        "mapping.project_key"              = "project_key"
+        "mapping.project_name"             = "project_name"
+        "mapping.lines_of_code"            = "lines_of_code"
+        "mapping.license_usage_percentage" = "license_usage_percentage"
+        "mapping.timestamp"                = "timestamp"
 
         # Optional: To ignore malformed JSON records instead of failing the query
         # "ignore.malformed.json" = "true"
@@ -102,27 +102,27 @@ resource "aws_quicksight_data_set" "sonarqube_usage_data" {
       name            = "sonarqube_usage_data"
       sql_query       = "SELECT * FROM ${var.athena_database_name}.sonarqube_usage_data"
       columns {
-        name = "sonarqube_extracted_tenant"
+        name = "tenant"
         type = "STRING"
       }
       columns {
-        name = "sonarqube_project_key"
+        name = "project_key"
         type = "STRING"
       }
       columns {
-        name = "sonarqube_project_name"
+        name = "project_name"
         type = "STRING"
       }
       columns {
-        name = "sonarqube_lines_of_code"
+        name = "lines_of_code"
         type = "INTEGER"
       }
       columns {
-        name = "sonarqube_license_usage_percentage"
+        name = "license_usage_percentage"
         type = "DECIMAL"
       }
       columns {
-        name = "sonarqube_collection_timestamp"
+        name = "timestamp"
         type = "DATETIME"
       }
     }

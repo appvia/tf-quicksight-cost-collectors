@@ -170,7 +170,7 @@ def collect_lines_of_code(config: Dict[str, Any], timestamp_iso: str) -> List[st
 
     for project in data["projects"]:
         project_data = {
-            "extracted_tenant": project["projectName"].split("-")[
+            "tenant": project["projectName"].split("-")[
                 0
             ],  # TODO: make this more robust
             "project_key": project["projectKey"],
@@ -200,7 +200,7 @@ def collect_license_usage(config: Dict[str, Any], timestamp_iso: str) -> List[st
 
     for project in data["projects"]:
         project_data = {
-            "extracted_tenant": project["projectName"].split("-")[
+            "tenant": project["projectName"].split("-")[
                 0
             ],  # TODO: make this more robust
             "project_key": project["projectKey"],
@@ -225,7 +225,7 @@ def collect_analyses(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
 
         for project in data["projects"]:
             project_data = {
-                "extracted_tenant": project["projectName"].split("-")[
+                "tenant": project["projectName"].split("-")[
                     0
                 ],  # TODO: make this more robust
                 "project_key": project["projectKey"],
@@ -253,9 +253,7 @@ def collect_analyses(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
         data = fetch_sonarqube_data(api_url, sonarqube_token, "analyses", project_key)
 
         project_data = {
-            "extracted_tenant": project_name.split("-")[
-                0
-            ],  # TODO: make this more robust
+            "tenant": project_name.split("-")[0],  # TODO: make this more robust
             "project_key": project_key,
             "project_name": project_name,
             "timestamp": timestamp_iso,

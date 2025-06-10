@@ -14,32 +14,28 @@ resource "aws_quicksight_data_set" "sonarqube_cost_usage" {
 
       # Define all the columns from the view
       columns {
-        name = "sonarqube_extracted_tenant"
+        name = "tenant"
         type = "STRING"
       }
       columns {
-        name = "sonarqube_project_key"
+        name = "project_key"
         type = "STRING"
       }
       columns {
-        name = "sonarqube_project_name"
+        name = "project_name"
         type = "STRING"
       }
       columns {
-        name = "sonarqube_lines_of_code"
+        name = "lines_of_code"
         type = "INTEGER"
       }
       columns {
-        name = "sonarqube_license_usage_percentage"
+        name = "license_usage_percentage"
         type = "DECIMAL"
       }
       columns {
-        name = "sonarqube_collection_timestamp"
+        name = "timestamp"
         type = "DATETIME"
-      }
-      columns {
-        name = "collection_date"
-        type = "STRING"
       }
       columns {
         name = "billing_period"
@@ -97,11 +93,11 @@ resource "aws_quicksight_data_set" "sonarqube_billing_period_usage" {
         type = "STRING"
       }
       columns {
-        name = "sonarqube_project_key"
+        name = "project_key"
         type = "STRING"
       }
       columns {
-        name = "sonarqube_project_name"
+        name = "project_name"
         type = "STRING"
       }
       columns {
