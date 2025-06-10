@@ -5,7 +5,6 @@ import datetime
 import urllib3
 import random
 from typing import Dict, List, Any, Callable
-from enum import Enum
 import time
 
 

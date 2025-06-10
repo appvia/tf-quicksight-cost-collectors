@@ -2,7 +2,6 @@ import os
 import json
 from unittest.mock import patch, MagicMock
 from collector import handler
-from datetime import datetime
 import pathlib
 
 
