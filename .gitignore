@@ -39,3 +39,5 @@ modules/sonarqube-cost-collector/.DS_Store
 .venv/
 .pycache/
 *.pyc
+
+.ruff_cache/
