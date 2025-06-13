@@ -90,10 +90,11 @@ def fetch_sonarqube_data(
         full_url = f"{full_url}?project={project_key}"
 
     # Make request using basic auth (token as username, empty password)
+    headers = urllib3.make_headers(basic_auth=f"{token}:")
     response = http.request(
         "GET",
         full_url,
-        basic_auth=(token, ""),
+        headers=headers,
     )
 
     if response.status != 200:
