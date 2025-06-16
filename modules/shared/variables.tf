@@ -86,3 +86,39 @@ variable "quicksight_data_set_permissions" {
   }))
   default = []
 }
+
+variable "vpc_name" {
+  description = "Name tag of the VPC to use for Lambda functions"
+  type        = string
+  default     = null
+}
+
+variable "vpc_id" {
+  description = "ID of the VPC to use for Lambda functions"
+  type        = string
+  default     = null
+}
+
+variable "subnet_names" {
+  description = "Name tags of the subnets to use for Lambda functions"
+  type        = list(string)
+  default     = []
+}
+
+variable "subnet_ids" {
+  description = "IDs of the subnets to use for Lambda functions"
+  type        = list(string)
+  default     = []
+}
+
+variable "security_group_names" {
+  description = "Name tags of the security groups to use for Lambda functions"
+  type        = list(string)
+  default     = []
+}
+
+variable "security_group_ids" {
+  description = "IDs of the security groups to use for Lambda functions"
+  type        = list(string)
+  default     = []
+}

@@ -18,6 +18,14 @@ resource "aws_lambda_function" "collector" {
   }
   filename         = data.archive_file.lambda_zip.output_path
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+
+  dynamic "vpc_config" {
+    for_each = var.vpc_config != null ? [var.vpc_config] : []
+    content {
+      subnet_ids         = vpc_config.value.subnet_ids
+      security_group_ids = vpc_config.value.security_group_ids
+    }
+  }
 }
 
 data "aws_iam_policy_document" "collector" {

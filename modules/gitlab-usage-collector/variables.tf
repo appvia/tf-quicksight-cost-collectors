@@ -50,3 +50,12 @@ variable "mock_mode" {
   type        = bool
   default     = false
 }
+
+variable "vpc_config" {
+  description = "VPC configuration for the Lambda function"
+  type = object({
+    subnet_ids         = list(string)
+    security_group_ids = list(string)
+  })
+  default = null
+}

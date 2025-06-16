@@ -37,3 +37,11 @@ output "results_bucket_name" {
   description = "Name of the S3 bucket for Athena query results"
   value       = module.s3_bucket_results.s3_bucket_id
 }
+
+output "lambda_vpc_config" {
+  description = "VPC configuration for Lambda functions"
+  value = length(data.aws_subnets.lambda_subnets) > 0 && length(data.aws_security_groups.lambda_security_groups) > 0 ? {
+    subnet_ids         = data.aws_subnets.lambda_subnets[0].ids
+    security_group_ids = data.aws_security_groups.lambda_security_groups[0].ids
+  } : null
+}

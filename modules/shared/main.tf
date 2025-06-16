@@ -239,3 +239,63 @@ resource "aws_quicksight_data_source" "cost_analysis" {
     }
   }
 }
+
+# Look up VPC by name or ID
+data "aws_vpc" "lambda_vpc" {
+  count = var.vpc_name != null || var.vpc_id != null ? 1 : 0
+
+  id   = var.vpc_id
+  tags = var.vpc_name != null ? { Name = var.vpc_name } : {}
+}
+
+# Look up subnets by name tags or IDs
+data "aws_subnets" "lambda_subnets" {
+  count = length(data.aws_vpc.lambda_vpc) > 0 && (length(var.subnet_names) > 0 || length(var.subnet_ids) > 0) ? 1 : 0
+
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.lambda_vpc[0].id]
+  }
+
+  dynamic "filter" {
+    for_each = length(var.subnet_ids) > 0 ? [1] : []
+    content {
+      name   = "subnet-id"
+      values = var.subnet_ids
+    }
+  }
+
+  dynamic "filter" {
+    for_each = length(var.subnet_names) > 0 ? [1] : []
+    content {
+      name   = "tag:Name"
+      values = var.subnet_names
+    }
+  }
+}
+
+# Look up security groups by name tags or IDs
+data "aws_security_groups" "lambda_security_groups" {
+  count = length(data.aws_vpc.lambda_vpc) > 0 && (length(var.security_group_names) > 0 || length(var.security_group_ids) > 0) ? 1 : 0
+
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.lambda_vpc[0].id]
+  }
+
+  dynamic "filter" {
+    for_each = length(var.security_group_ids) > 0 ? [1] : []
+    content {
+      name   = "group-id"
+      values = var.security_group_ids
+    }
+  }
+
+  dynamic "filter" {
+    for_each = length(var.security_group_names) > 0 ? [1] : []
+    content {
+      name   = "tag:Name"
+      values = var.security_group_names
+    }
+  }
+}

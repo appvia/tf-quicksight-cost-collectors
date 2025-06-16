@@ -63,3 +63,12 @@ variable "sql_directory_path" {
   type        = string
   default     = "./sql"
 }
+
+variable "vpc_config" {
+  description = "VPC configuration for the Lambda function"
+  type = object({
+    subnet_ids         = list(string)
+    security_group_ids = list(string)
+  })
+  default = null
+}
