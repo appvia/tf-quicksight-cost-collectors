@@ -1,4 +1,10 @@
 # Create Lambda function for processing SQL files and executing Athena queries
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambda"
+  output_path = "${path.module}/lambda/lambda.zip"
+}
+
 resource "aws_lambda_function" "athena_view_creator" {
   function_name = "athena-view-creator"
   description   = "Executes Athena queries from SQL files stored in S3"
@@ -8,8 +14,8 @@ resource "aws_lambda_function" "athena_view_creator" {
   timeout       = var.lambda_timeout
   memory_size   = var.lambda_memory_size
 
-  filename         = "${path.module}/lambda/lambda.zip"
-  source_code_hash = filebase64sha256("${path.module}/lambda/lambda.zip")
+  filename         = data.archive_file.lambda_zip.output_path
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 
   environment {
     variables = {

@@ -1,3 +1,9 @@
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambda"
+  output_path = "${path.module}/lambda/lambda.zip"
+}
+
 resource "aws_lambda_function" "usage_collector" {
   function_name = "sonarqube-usage-collector"
   handler       = "collector.handler"
@@ -15,8 +21,8 @@ resource "aws_lambda_function" "usage_collector" {
       MOCK_MODE     = var.mock_mode
     }
   }
-  filename         = "${path.module}/lambda/lambda.zip"
-  source_code_hash = filebase64sha256("${path.module}/lambda/lambda.zip")
+  filename         = data.archive_file.lambda_zip.output_path
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 }
 
 data "aws_iam_policy_document" "usage_collector" {
@@ -62,3 +68,4 @@ data "aws_iam_policy_document" "lambda_assume_role" {
     }
   }
 }
+
