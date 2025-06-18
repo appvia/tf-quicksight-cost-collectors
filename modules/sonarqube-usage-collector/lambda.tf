@@ -61,6 +61,13 @@ resource "aws_iam_role_policy_attachment" "usage_collector" {
   policy_arn = aws_iam_policy.usage_collector.arn
 }
 
+# Attach the AWS managed policy for VPC access (only if VPC config is provided)
+resource "aws_iam_role_policy_attachment" "usage_collector_vpc_access" {
+  count      = var.vpc_config != null ? 1 : 0
+  role       = aws_iam_role.usage_collector.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 resource "aws_iam_role" "usage_collector" {
   name               = "sonarqube-usage-collector"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json

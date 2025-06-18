@@ -46,6 +46,13 @@ resource "aws_iam_role_policy_attachment" "collector" {
   policy_arn = aws_iam_policy.collector.arn
 }
 
+# Attach the AWS managed policy for VPC access (only if VPC config is provided)
+resource "aws_iam_role_policy_attachment" "collector_vpc_access" {
+  count      = var.vpc_config != null ? 1 : 0
+  role       = aws_iam_role.collector.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 resource "aws_iam_role" "collector" {
   name               = "user-data-collector"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json

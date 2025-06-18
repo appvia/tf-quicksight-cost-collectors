@@ -49,3 +49,16 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
 
   tags = var.tags
 }
+
+# Attach policy to IAM role
+resource "aws_iam_role_policy_attachment" "lambda_policy_attachment" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.lambda_policy.arn
+}
+
+# Attach the AWS managed policy for VPC access (only if VPC config is provided)
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+  count      = var.vpc_config != null ? 1 : 0
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
