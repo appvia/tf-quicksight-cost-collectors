@@ -59,3 +59,9 @@ variable "vpc_config" {
   })
   default = null
 }
+
+variable "lambda_zip_output_path" {
+  description = "Path to the lambda zip file"
+  type        = string
+  default     = "build/lambda.zip"
+}

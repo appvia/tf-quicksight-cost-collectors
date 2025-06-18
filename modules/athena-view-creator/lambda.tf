@@ -2,7 +2,7 @@
 data "archive_file" "lambda_zip" {
   type        = "zip"
   source_dir  = "${path.module}/lambda"
-  output_path = "build/lambda.zip"
+  output_path = var.lambda_zip_output_path
 }
 
 resource "aws_lambda_function" "athena_view_creator" {
