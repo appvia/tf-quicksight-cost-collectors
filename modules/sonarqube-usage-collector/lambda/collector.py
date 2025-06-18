@@ -280,6 +280,14 @@ def upload_to_s3(config: Dict[str, Any], s3_key: str, data: Dict[str, Any]) -> N
     )
 
 
+# Map of metric types to their collection functions
+METRIC_COLLECTORS: Dict[str, Callable] = {
+    "lines_of_code": collect_lines_of_code,
+    "license_usage": collect_license_usage,
+    "analyses": collect_analyses,
+}
+
+
 def handler(event, context):
     """Main Lambda handler function."""
     try:
@@ -329,11 +337,3 @@ def handler(event, context):
             "statusCode": 500,
             "body": json.dumps({"error": f"Error processing data: {str(e)}"}),
         }
-
-
-# Map of metric types to their collection functions
-METRIC_COLLECTORS: Dict[str, Callable] = {
-    "lines_of_code": collect_lines_of_code,
-    "license_usage": collect_license_usage,
-    "analyses": collect_analyses,
-}
