@@ -60,6 +60,12 @@ variable "vpc_config" {
   default = null
 }
 
+variable "vpc_name" {
+  description = "Name tag of the VPC to use for creating security groups when VPC mode is enabled"
+  type        = string
+  default     = null
+}
+
 variable "lambda_zip_output_path" {
   description = "Output path for the lambda zip file"
   type        = string
@@ -101,26 +107,20 @@ variable "athena_table_name" {
   type        = string
 }
 
-variable "vpc_id" {
-  description = "VPC ID for creating security groups when VPC mode is enabled"
-  type        = string
-  default     = null
-}
-
 variable "lambda_egress_rules" {
   description = "List of egress rules for the Lambda security group"
   type = list(object({
     description = string
-    ip_protocol    = string
-    from_port   = number
-    to_port     = number
-    cidr_ipv4  = string
+    ip_protocol = string
+    from_port   = optional(number)
+    to_port     = optional(number)
+    cidr_ipv4   = string
   }))
   default = [{
     description = "All outbound traffic"
-    ip_protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_ipv4  = "0.0.0.0/0"
+    ip_protocol = "-1"
+    from_port   = null
+    to_port     = null
+    cidr_ipv4   = "0.0.0.0/0"
   }]
 }

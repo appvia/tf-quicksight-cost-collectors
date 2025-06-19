@@ -150,7 +150,7 @@ resource "aws_security_group" "lambda_sg" {
   count       = var.vpc_config != null ? 1 : 0
   name_prefix = "sonarqube-usage-collector-lambda-"
   description = "Security group for SonarQube usage collector Lambda function"
-  vpc_id      = var.vpc_id
+  vpc_id      = data.aws_vpc.this[0].id
 
   tags = merge(var.tags, {
     Name = "sonarqube-usage-collector-lambda-sg"
