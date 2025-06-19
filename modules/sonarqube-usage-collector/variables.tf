@@ -75,6 +75,7 @@ variable "log_retention_in_days" {
 variable "sonarqube_domain" {
   description = "Domain of the SonarQube server"
   type        = string
+  default     = "localhost"
 }
 
 variable "sonarqube_port" {
@@ -92,9 +93,11 @@ variable "sonarqube_scheme" {
 variable "sonarqube_token_secret_name" {
   description = "Name of the AWS Secrets Manager secret containing the SonarQube token"
   type        = string
+  default     = "sonarqube-token"
 }
 
 variable "athena_table_name" {
   description = "Name of the Athena table containing project information"
   type        = string
+  default     = "sonarqube_usage_data"
 }
