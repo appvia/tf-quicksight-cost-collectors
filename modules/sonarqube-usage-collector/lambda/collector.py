@@ -147,8 +147,12 @@ def get_sonarqube_token(config: Dict[str, Any]) -> str:
             SecretId=config["sonarqube_token_secret_name"]
         )
         sonarqube_token = response.get("SecretString")
-        if not sonarqube_token:
-            raise Exception("SonarQube token is empty")
+        if (
+            not sonarqube_token
+            or sonarqube_token is None
+            or sonarqube_token in ["", "null", "None", "undefined"]
+        ):
+            raise Exception(f"SonarQube token is empty or invalid: {sonarqube_token}")
         return sonarqube_token
     except Exception as e:
         raise Exception(f"Error getting SonarQube token from secrets manager: {str(e)}")
