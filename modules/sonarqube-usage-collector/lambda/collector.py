@@ -153,6 +153,7 @@ def get_sonarqube_token(config: Dict[str, Any]) -> str:
             or sonarqube_token in ["", "null", "None", "undefined"]
         ):
             raise Exception(f"SonarQube token is empty or invalid: {sonarqube_token}")
+        logger.info("Successfully retrieved SonarQube token from secrets manager")
         return sonarqube_token
     except Exception as e:
         raise Exception(f"Error getting SonarQube token from secrets manager: {str(e)}")
