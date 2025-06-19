@@ -28,8 +28,11 @@ resource "aws_lambda_function" "usage_collector" {
   dynamic "vpc_config" {
     for_each = var.vpc_config != null ? [var.vpc_config] : []
     content {
-      subnet_ids         = vpc_config.value.subnet_ids
-      security_group_ids = vpc_config.value.security_group_ids
+      subnet_ids = vpc_config.value.subnet_ids
+      security_group_ids = concat(
+        vpc_config.value.security_group_ids,
+        var.create_lambda_security_group ? [aws_security_group.lambda_sg[0].id] : []
+      )
     }
   }
 
@@ -140,5 +143,30 @@ data "aws_iam_policy_document" "lambda_assume_role" {
       identifiers = ["lambda.amazonaws.com"]
     }
   }
+}
+
+# Security group for Lambda function when running in VPC mode
+resource "aws_security_group" "lambda_sg" {
+  count       = var.vpc_config != null ? 1 : 0
+  name_prefix = "sonarqube-usage-collector-lambda-"
+  description = "Security group for SonarQube usage collector Lambda function"
+  vpc_id      = var.vpc_id
+
+  tags = merge(var.tags, {
+    Name = "sonarqube-usage-collector-lambda-sg"
+  })
+}
+
+# Configurable egress rules for Lambda function
+resource "aws_vpc_security_group_egress_rule" "lambda_egress" {
+  for_each = var.vpc_config != null ? [ for rule in var.lambda_egress_rules : rule ] : []
+
+  security_group_id = aws_security_group.lambda_sg[0].id
+  
+  description = each.value.description
+  ip_protocol = each.value.ip_protocol
+  from_port   = each.value.from_port
+  to_port     = each.value.to_port
+  cidr_ipv4   = each.value.cidr_ipv4
 }
 

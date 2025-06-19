@@ -97,7 +97,30 @@ variable "sonarqube_token_secret_name" {
 }
 
 variable "athena_table_name" {
-  description = "Name of the Athena table containing project information"
+  description = "Name of the Athena table from the shared module"
   type        = string
-  default     = "sonarqube_usage_data"
+}
+
+variable "vpc_id" {
+  description = "VPC ID for creating security groups when VPC mode is enabled"
+  type        = string
+  default     = null
+}
+
+variable "lambda_egress_rules" {
+  description = "List of egress rules for the Lambda security group"
+  type = list(object({
+    description = string
+    ip_protocol    = string
+    from_port   = number
+    to_port     = number
+    cidr_ipv4  = string
+  }))
+  default = [{
+    description = "All outbound traffic"
+    ip_protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_ipv4  = "0.0.0.0/0"
+  }]
 }
