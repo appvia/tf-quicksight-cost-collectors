@@ -115,3 +115,10 @@ resource "aws_lambda_permission" "allow_bucket" {
   principal     = "s3.amazonaws.com"
   source_arn    = module.s3_bucket_sql_files.s3_bucket_arn
 }
+
+# Attach the AWS managed policy for VPC access (only if VPC config is provided)
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+  count      = var.vpc_config != null ? 1 : 0
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
