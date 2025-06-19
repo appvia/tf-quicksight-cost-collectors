@@ -46,7 +46,7 @@ variable "create_lambda_log_group" {
   default     = true
 }
 
-variable "lambda_log_retention_days" {
+variable "log_retention_in_days" {
   description = "Number of days to retain Lambda logs"
   type        = number
   default     = 14

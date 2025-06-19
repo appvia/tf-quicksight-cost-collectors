@@ -29,12 +29,14 @@ resource "aws_iam_policy" "lambda_policy" {
       # CloudWatch Logs permissions
       {
         Action = [
-          "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
         Effect   = "Allow"
-        Resource = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/athena-view-creator:*"
+        Resource = [
+          aws_cloudwatch_log_group.lambda_logs[0].arn,
+          "${aws_cloudwatch_log_group.lambda_logs[0].arn}:*"
+        ]
       },
       # S3 permissions
       {

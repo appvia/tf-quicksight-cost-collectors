@@ -24,3 +24,9 @@ variable "lambda_zip_output_path" {
   type        = string
   default     = "build/lambda.zip"
 }
+
+variable "log_retention_in_days" {
+  description = "Number of days to retain CloudWatch logs"
+  type        = number
+  default     = 14
+}

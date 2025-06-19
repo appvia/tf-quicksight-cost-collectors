@@ -26,12 +26,33 @@ resource "aws_lambda_function" "collector" {
       security_group_ids = vpc_config.value.security_group_ids
     }
   }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.collector,
+    aws_cloudwatch_log_group.collector,
+  ]
+}
+
+resource "aws_cloudwatch_log_group" "collector" {
+  name              = "/aws/lambda/user-data-collector"
+  retention_in_days = var.log_retention_in_days
 }
 
 data "aws_iam_policy_document" "collector" {
   statement {
     actions   = ["dynamodb:PutItem", "dynamodb:GetItem"]
     resources = [aws_dynamodb_table.user_data.arn]
+  }
+
+  statement {
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
+    ]
+    resources = [
+      aws_cloudwatch_log_group.collector.arn,
+      "${aws_cloudwatch_log_group.collector.arn}:*"
+    ]
   }
 }
 

@@ -45,7 +45,7 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
   count = var.create_lambda_log_group ? 1 : 0
 
   name              = "/aws/lambda/athena-view-creator"
-  retention_in_days = var.lambda_log_retention_days
+  retention_in_days = var.log_retention_in_days
 
   tags = var.tags
 }

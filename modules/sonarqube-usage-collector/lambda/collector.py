@@ -1,19 +1,53 @@
 import json
+import logging
 import boto3
 import os
 import datetime
+from datetime import timezone
 import urllib3
 import random
 from typing import Dict, List, Any, Callable
 import time
 
 
-# Map metric types to their API endpoints
-METRIC_ENDPOINTS = {
-    "lines_of_code": "/api/projects/license_usage",
-    "license_usage": "/api/projects/license_usage",
-    "analyses": "/api/project_analyses",
-}
+class JsonFormatter(logging.Formatter):
+    """Custom JSON formatter for structured logging."""
+
+    def format(self, record):
+        # Get all standard logging fields
+        log_record = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
+        }
+
+        # Get all standard LogRecord attributes
+        standard_attrs = set(dir(logging.LogRecord("", 0, "", 0, "", (), None)))
+
+        # Add any extra fields that were passed in
+        for key, value in record.__dict__.items():
+            if key not in standard_attrs:
+                log_record[key] = value
+
+        return json.dumps(log_record)
+
+
+# Configure logging
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+logger = logging.getLogger()
+logger.setLevel(getattr(logging, LOG_LEVEL))
+
+# Remove existing handlers
+for handler in logger.handlers[:]:
+    logger.removeHandler(handler)
+
+# Add JSON formatter
+handler = logging.StreamHandler()
+handler.setFormatter(JsonFormatter())
+logger.addHandler(handler)
 
 
 def load_configuration() -> Dict[str, Any]:
@@ -41,10 +75,13 @@ def load_configuration() -> Dict[str, Any]:
     missing_fields = [field for field in required_fields if not config[field]]
 
     if missing_fields and not config["mock_mode"]:
+        logger.error(
+            f"Missing required environment variables: {', '.join(missing_fields)}"
+        )
         raise ValueError(
             f"Missing required environment variables: {', '.join(missing_fields)}"
         )
-
+    logger.info(f"Configuration loaded: {config}")
     return config
 
 
@@ -160,16 +197,18 @@ def get_projects(config: Dict[str, Any]) -> List[Dict[str, Any]]:
 def collect_lines_of_code(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
     """Collect lines of code metric."""
     if config["mock_mode"]:
+        logger.info("Mock mode enabled, generating mock data")
         data = generate_mock_data("lines_of_code")
+        logger.info(f"Data: {data}")
     else:
         sonarqube_token = get_sonarqube_token(config)
         api_url = f"{config['sonarqube_scheme']}://{config['sonarqube_domain']}:{config['sonarqube_port']}"
         data = fetch_sonarqube_data(api_url, sonarqube_token, "lines_of_code")
 
-    s3_client = boto3.client("s3")
     uploaded_files = []
 
     for project in data["projects"]:
+        logger.info(f"Processing project: {project['projectKey']}")
         project_data = {
             "tenant": project["projectName"].split("-")[
                 0
@@ -179,7 +218,7 @@ def collect_lines_of_code(config: Dict[str, Any], timestamp_iso: str) -> List[st
             "timestamp": timestamp_iso,
             "lines_of_code": project["linesOfCode"],
         }
-
+        logger.info(f"Project data: {project_data}")
         s3_key = f"sonarqube/lines_of_code/{timestamp_iso[:7]}/{project['projectKey']}_{timestamp_iso[11:16]}.json"
         upload_to_s3(config, s3_key, project_data)
         uploaded_files.append(s3_key)
@@ -190,16 +229,17 @@ def collect_lines_of_code(config: Dict[str, Any], timestamp_iso: str) -> List[st
 def collect_license_usage(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
     """Collect license usage metric."""
     if config["mock_mode"]:
+        logger.info("Mock mode enabled, generating mock data")
         data = generate_mock_data("license_usage")
+        logger.info(f"Data: {data}")
     else:
         sonarqube_token = get_sonarqube_token(config)
         api_url = f"{config['sonarqube_scheme']}://{config['sonarqube_domain']}:{config['sonarqube_port']}"
         data = fetch_sonarqube_data(api_url, sonarqube_token, "license_usage")
-
-    s3_client = boto3.client("s3")
     uploaded_files = []
 
     for project in data["projects"]:
+        logger.info(f"Processing project: {project['projectKey']}")
         project_data = {
             "tenant": project["projectName"].split("-")[
                 0
@@ -209,22 +249,22 @@ def collect_license_usage(config: Dict[str, Any], timestamp_iso: str) -> List[st
             "timestamp": timestamp_iso,
             "license_usage_percentage": project["licenseUsagePercentage"],
         }
-
+        logger.info(f"Project data: {project_data}")
         s3_key = f"sonarqube/license_usage/{timestamp_iso[:7]}/{project['projectKey']}_{timestamp_iso[11:16]}.json"
         upload_to_s3(config, s3_key, project_data)
         uploaded_files.append(s3_key)
-
     return uploaded_files
 
 
 def collect_analyses(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
     """Collect analyses metric."""
     if config["mock_mode"]:
+        logger.info("Mock mode enabled, generating mock data")
         data = generate_mock_data("analyses")
-        s3_client = boto3.client("s3")
         uploaded_files = []
 
         for project in data["projects"]:
+            logger.info(f"Processing project: {project['projectKey']}")
             project_data = {
                 "tenant": project["projectName"].split("-")[
                     0
@@ -236,8 +276,9 @@ def collect_analyses(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
                 "analysis_count": project["analysisCount"],
                 "last_analysis_status": project["lastAnalysisStatus"],
             }
-
+            logger.info(f"Uploading project data to S3: {project_data}")
             s3_key = f"sonarqube/analyses/{timestamp_iso[:7]}/{project['projectKey']}_{timestamp_iso[11:16]}.json"
+            logger.info(f"S3 key: {s3_key}")
             upload_to_s3(config, s3_key, project_data)
             uploaded_files.append(s3_key)
 
@@ -246,13 +287,13 @@ def collect_analyses(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
     sonarqube_token = get_sonarqube_token(config)
     api_url = f"{config['sonarqube_scheme']}://{config['sonarqube_domain']}:{config['sonarqube_port']}"
     projects = get_projects(config)
-
+    logger.info(f"Projects: {projects}")
     uploaded_files = []
     for project in projects:
         project_key = project["project_key"]
         project_name = project["project_name"]
         data = fetch_sonarqube_data(api_url, sonarqube_token, "analyses", project_key)
-
+        logger.info(f"Data: {data}")
         project_data = {
             "tenant": project_name.split("-")[0],  # TODO: make this more robust
             "project_key": project_key,
@@ -262,8 +303,9 @@ def collect_analyses(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
             "analysis_count": data["analysisCount"],
             "last_analysis_status": data["lastAnalysisStatus"],
         }
-
+        logger.info(f"Project data: {project_data}")
         s3_key = f"sonarqube/analyses/{timestamp_iso[:7]}/{project_key}_{timestamp_iso[11:16]}.json"
+        logger.info(f"S3 key: {s3_key}")
         upload_to_s3(config, s3_key, project_data)
         uploaded_files.append(s3_key)
 
@@ -272,13 +314,23 @@ def collect_analyses(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
 
 def upload_to_s3(config: Dict[str, Any], s3_key: str, data: Dict[str, Any]) -> None:
     """Upload data to S3."""
+    logger.info(f"Uploading data to S3: {s3_key}")
     s3_client = boto3.client("s3")
+    logger.debug(f"Creating S3 client: {s3_client}")
     s3_client.put_object(
         Bucket=config["output_bucket"],
         Key=s3_key,
         Body=json.dumps(data),
     )
+    logger.info(f"Data uploaded to S3: {s3_key}")
 
+
+# Map metric types to their API endpoints
+METRIC_ENDPOINTS = {
+    "lines_of_code": "/api/projects/license_usage",
+    "license_usage": "/api/projects/license_usage",
+    "analyses": "/api/project_analyses",
+}
 
 # Map of metric types to their collection functions
 METRIC_COLLECTORS: Dict[str, Callable] = {
@@ -296,8 +348,12 @@ def handler(event, context):
 
         # Get metric type from event, default to lines of code
         metric_type = event.get("metric_type", "lines_of_code")
+        logger.info(f"Metric type: {metric_type}")
 
         if metric_type not in METRIC_ENDPOINTS:
+            logger.error(
+                f"Invalid metric type: {metric_type}. Valid types are: {list(METRIC_ENDPOINTS.keys())}"
+            )
             return {
                 "statusCode": 400,
                 "body": json.dumps(
@@ -310,10 +366,13 @@ def handler(event, context):
         # Generate timestamps
         current_time = datetime.datetime.now()
         timestamp_iso = current_time.isoformat()
+        logger.info(f"Timestamp: {timestamp_iso}")
 
         # Get the appropriate collector function and execute it
         collector = METRIC_COLLECTORS[metric_type]
+        logger.info(f"Collector: {collector}")
         uploaded_files = collector(config, timestamp_iso)
+        logger.info(f"Uploaded files: {uploaded_files}")
 
         return {
             "statusCode": 200,
@@ -326,6 +385,7 @@ def handler(event, context):
         }
 
     except urllib3.exceptions.HTTPError as e:
+        logger.error(f"Error fetching data from SonarQube: {str(e)}")
         return {
             "statusCode": 500,
             "body": json.dumps(
@@ -333,6 +393,7 @@ def handler(event, context):
             ),
         }
     except Exception as e:
+        logger.error(f"Error processing data: {str(e)}")
         return {
             "statusCode": 500,
             "body": json.dumps({"error": f"Error processing data: {str(e)}"}),

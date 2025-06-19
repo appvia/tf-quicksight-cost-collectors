@@ -31,6 +31,16 @@ resource "aws_lambda_function" "usage_collector" {
       security_group_ids = vpc_config.value.security_group_ids
     }
   }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.usage_collector,
+    aws_cloudwatch_log_group.usage_collector,
+  ]
+}
+
+resource "aws_cloudwatch_log_group" "usage_collector" {
+  name              = "/aws/lambda/sonarqube-usage-collector"
+  retention_in_days = var.log_retention_in_days
 }
 
 data "aws_iam_policy_document" "usage_collector" {
@@ -47,6 +57,17 @@ data "aws_iam_policy_document" "usage_collector" {
   statement {
     actions   = ["kms:Encrypt"]
     resources = [var.usage_data_bucket_key_arn]
+  }
+
+  statement {
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
+    ]
+    resources = [
+      aws_cloudwatch_log_group.usage_collector.arn,
+      "${aws_cloudwatch_log_group.usage_collector.arn}:*"
+    ]
   }
 }
 
