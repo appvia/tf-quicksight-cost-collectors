@@ -2,8 +2,7 @@ import json
 import logging
 import boto3
 import os
-import datetime
-from datetime import timezone
+from datetime import datetime, timezone
 import urllib3
 import random
 from typing import Dict, List, Any, Callable
@@ -104,7 +103,7 @@ def generate_mock_data(metric_type: str) -> Dict[str, List[Dict[str, Any]]]:
         elif metric_type == "license_usage":
             project["licenseUsagePercentage"] = round(random.uniform(0, 3), 2)
         elif metric_type == "analyses":
-            project["lastAnalysisDate"] = datetime.datetime.now().isoformat()
+            project["lastAnalysisDate"] = datetime.now().isoformat()
             project["analysisCount"] = random.randint(1, 100)
             project["lastAnalysisStatus"] = random.choice(
                 ["SUCCESS", "FAILED", "IN_PROGRESS"]
@@ -166,28 +165,43 @@ def get_projects(config: Dict[str, Any]) -> List[Dict[str, Any]]:
         )
     except Exception as e:
         raise Exception(f"Error starting query execution: {str(e)}")
-    # wait for query to complete
-    while True:
-        print(f"Waiting for query to complete: {response['QueryExecutionId']}")
+
+    query_execution_id = response["QueryExecutionId"]
+    max_wait_time = 300  # 5 minutes timeout
+    elapsed_time = 0
+
+    # wait for query to complete with timeout
+    while elapsed_time < max_wait_time:
+        logger.info(
+            f"Waiting for query to complete: {query_execution_id}, elapsed: {elapsed_time}s"
+        )
         try:
             response = athena_client.get_query_execution(
-                QueryExecutionId=response["QueryExecutionId"]
+                QueryExecutionId=query_execution_id
             )
         except Exception as e:
             raise Exception(f"Error getting query execution: {str(e)}")
-        if response["QueryExecution"]["Status"]["State"] == "SUCCEEDED":
+
+        state = response["QueryExecution"]["Status"]["State"]
+        if state == "SUCCEEDED":
             break
-        elif response["QueryExecution"]["Status"]["State"] == "FAILED":
+        elif state in ["FAILED", "CANCELLED"]:
             raise Exception(
-                f"Query failed: {response['QueryExecution']['Status']['StateChangeReason']}"
+                f"Query {state.lower()}: {response['QueryExecution']['Status'].get('StateChangeReason', 'Unknown reason')}"
             )
-        time.sleep(1)
-    print(f"Query completed: {response['QueryExecutionId']}")
+        elif state in ["RUNNING", "QUEUED"]:
+            time.sleep(1)
+            elapsed_time += 1
+        else:
+            raise Exception(f"Unknown query state: {state}")
+
+    if elapsed_time >= max_wait_time:
+        raise Exception(f"Query timed out after {max_wait_time} seconds")
+
+    logger.info(f"Query completed: {query_execution_id}")
     # get query results
     try:
-        response = athena_client.get_query_results(
-            QueryExecutionId=response["QueryExecutionId"]
-        )
+        response = athena_client.get_query_results(QueryExecutionId=query_execution_id)
     except Exception as e:
         raise Exception(f"Error getting query results: {str(e)}")
     # return query results
@@ -364,7 +378,7 @@ def handler(event, context):
             }
 
         # Generate timestamps
-        current_time = datetime.datetime.now()
+        current_time = datetime.now()
         timestamp_iso = current_time.isoformat()
         logger.info(f"Timestamp: {timestamp_iso}")
 

@@ -71,3 +71,30 @@ variable "log_retention_in_days" {
   type        = number
   default     = 14
 }
+
+variable "sonarqube_domain" {
+  description = "Domain of the SonarQube server"
+  type        = string
+}
+
+variable "sonarqube_port" {
+  description = "Port number of the SonarQube server"
+  type        = string
+  default     = "9000"
+}
+
+variable "sonarqube_scheme" {
+  description = "Scheme for the SonarQube server (http or https)"
+  type        = string
+  default     = "https"
+}
+
+variable "sonarqube_token_secret_name" {
+  description = "Name of the AWS Secrets Manager secret containing the SonarQube token"
+  type        = string
+}
+
+variable "athena_table_name" {
+  description = "Name of the Athena table containing project information"
+  type        = string
+}

@@ -13,12 +13,13 @@ resource "aws_lambda_function" "usage_collector" {
   timeout = 120
   environment {
     variables = {
-      # SONARQUBE_DOMAIN            = var.sonarqube_domain
-      # SONARQUBE_PORT              = var.sonarqube_port
-      # SONARQUBE_SCHEME            = var.sonarqube_scheme
-      # SONARQUBE_TOKEN_SECRET_NAME = var.sonarqube_token_secret_name
-      OUTPUT_BUCKET = var.usage_data_bucket_name
-      MOCK_MODE     = var.mock_mode
+      SONARQUBE_DOMAIN            = var.sonarqube_domain
+      SONARQUBE_PORT              = var.sonarqube_port
+      SONARQUBE_SCHEME            = var.sonarqube_scheme
+      SONARQUBE_TOKEN_SECRET_NAME = var.sonarqube_token_secret_name
+      ATHENA_TABLE_NAME           = var.athena_table_name
+      OUTPUT_BUCKET               = var.usage_data_bucket_name
+      MOCK_MODE                   = var.mock_mode
     }
   }
   filename         = data.archive_file.lambda_zip.output_path
@@ -67,6 +68,42 @@ data "aws_iam_policy_document" "usage_collector" {
     resources = [
       aws_cloudwatch_log_group.usage_collector.arn,
       "${aws_cloudwatch_log_group.usage_collector.arn}:*"
+    ]
+  }
+
+  statement {
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = ["arn:aws:secretsmanager:*:*:secret:${var.sonarqube_token_secret_name}*"]
+  }
+
+  statement {
+    actions = [
+      "athena:StartQueryExecution",
+      "athena:GetQueryExecution",
+      "athena:GetQueryResults"
+    ]
+    resources = [
+      "arn:aws:athena:*:*:workgroup/${var.athena_workgroup_name}",
+      "arn:aws:athena:*:*:datacatalog/*"
+    ]
+  }
+
+  statement {
+    actions = [
+      "glue:GetDatabase"
+    ]
+    resources = [
+      "arn:aws:glue:*:*:catalog",
+      "arn:aws:glue:*:*:database/${var.athena_database_name}"
+    ]
+  }
+
+  statement {
+    actions = [
+      "glue:GetTable"
+    ]
+    resources = [
+      "arn:aws:glue:*:*:table/${var.athena_database_name}/${var.athena_table_name}"
     ]
   }
 }
