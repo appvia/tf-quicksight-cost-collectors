@@ -31,7 +31,7 @@ resource "aws_lambda_function" "usage_collector" {
       subnet_ids = vpc_config.value.subnet_ids
       security_group_ids = concat(
         vpc_config.value.security_group_ids,
-        var.create_lambda_security_group ? [aws_security_group.lambda_sg[0].id] : []
+        [aws_security_group.lambda_sg[0].id]
       )
     }
   }
@@ -159,14 +159,14 @@ resource "aws_security_group" "lambda_sg" {
 
 # Configurable egress rules for Lambda function
 resource "aws_vpc_security_group_egress_rule" "lambda_egress" {
-  for_each = var.vpc_config != null ? [ for rule in var.lambda_egress_rules : rule ] : []
+  count = var.vpc_config != null ? length(var.lambda_egress_rules) : 0
 
   security_group_id = aws_security_group.lambda_sg[0].id
   
-  description = each.value.description
-  ip_protocol = each.value.ip_protocol
-  from_port   = each.value.from_port
-  to_port     = each.value.to_port
-  cidr_ipv4   = each.value.cidr_ipv4
+  description = var.lambda_egress_rules[count.index].description
+  ip_protocol = var.lambda_egress_rules[count.index].ip_protocol
+  from_port   = var.lambda_egress_rules[count.index].from_port
+  to_port     = var.lambda_egress_rules[count.index].to_port
+  cidr_ipv4   = var.lambda_egress_rules[count.index].cidr_ipv4
 }
 
