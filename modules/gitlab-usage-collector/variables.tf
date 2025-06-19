@@ -71,3 +71,57 @@ variable "log_retention_in_days" {
   type        = number
   default     = 14
 }
+
+variable "gitlab_domain" {
+  description = "Domain of the GitLab server"
+  type        = string
+  default     = "localhost"
+}
+
+variable "gitlab_port" {
+  description = "Port number of the GitLab server"
+  type        = string
+  default     = "443"
+}
+
+variable "gitlab_scheme" {
+  description = "Scheme for the GitLab server (http or https)"
+  type        = string
+  default     = "https"
+}
+
+variable "gitlab_token_secret_name" {
+  description = "Name of the AWS Secrets Manager secret containing the GitLab token"
+  type        = string
+  default     = "gitlab-token"
+}
+
+variable "gitlab_ignore_ssl" {
+  description = "Ignore SSL certificate verification for GitLab server (useful for self-signed certificates)"
+  type        = bool
+  default     = false
+}
+
+variable "gitlab_required_fields" {
+  description = "Required fields for GitLab users ('all' or comma-separated list)"
+  type        = string
+  default     = "all"
+}
+
+variable "gitlab_external_users" {
+  description = "Include external users in GitLab data collection"
+  type        = bool
+  default     = false
+}
+
+variable "gitlab_active_users_only" {
+  description = "Only collect active users from GitLab"
+  type        = bool
+  default     = false
+}
+
+variable "user_data_dynamodb_table_name" {
+  description = "Name of the DynamoDB table for user-tenant mapping"
+  type        = string
+  default     = "user-data-tenant-table"
+}

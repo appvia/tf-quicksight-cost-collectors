@@ -56,6 +56,8 @@ def load_configuration() -> Dict[str, Any]:
         "sonarqube_port": os.environ.get("SONARQUBE_PORT"),
         "sonarqube_scheme": os.environ.get("SONARQUBE_SCHEME"),
         "sonarqube_token_secret_name": os.environ.get("SONARQUBE_TOKEN_SECRET_NAME"),
+        "sonarqube_ignore_ssl": os.environ.get("SONARQUBE_IGNORE_SSL", "false").lower()
+        == "true",
         "output_bucket": os.environ.get("OUTPUT_BUCKET"),
         "mock_mode": os.environ.get("MOCK_MODE", "false").lower() == "true",
         "athena_projects_table_name": os.environ.get("ATHENA_TABLE_NAME"),
@@ -113,10 +115,20 @@ def generate_mock_data(metric_type: str) -> Dict[str, List[Dict[str, Any]]]:
 
 
 def fetch_sonarqube_data(
-    api_url: str, token: str, metric_type: str, project_key: str = None
+    api_url: str,
+    token: str,
+    metric_type: str,
+    project_key: str = None,
+    ignore_ssl: bool = False,
 ) -> Dict[str, Any]:
     """Fetch project data from SonarQube API."""
-    http = urllib3.PoolManager()
+    if ignore_ssl:
+        # Disable SSL verification and suppress warnings
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        http = urllib3.PoolManager(cert_reqs="CERT_NONE", assert_hostname=False)
+        logger.info("SSL verification disabled for SonarQube API requests")
+    else:
+        http = urllib3.PoolManager()
 
     endpoint = METRIC_ENDPOINTS[metric_type]
     full_url = f"{api_url}{endpoint}"
@@ -222,7 +234,12 @@ def collect_lines_of_code(config: Dict[str, Any], timestamp_iso: str) -> List[st
     else:
         sonarqube_token = get_sonarqube_token(config)
         api_url = f"{config['sonarqube_scheme']}://{config['sonarqube_domain']}:{config['sonarqube_port']}"
-        data = fetch_sonarqube_data(api_url, sonarqube_token, "lines_of_code")
+        data = fetch_sonarqube_data(
+            api_url,
+            sonarqube_token,
+            "lines_of_code",
+            ignore_ssl=config["sonarqube_ignore_ssl"],
+        )
 
     uploaded_files = []
 
@@ -254,7 +271,12 @@ def collect_license_usage(config: Dict[str, Any], timestamp_iso: str) -> List[st
     else:
         sonarqube_token = get_sonarqube_token(config)
         api_url = f"{config['sonarqube_scheme']}://{config['sonarqube_domain']}:{config['sonarqube_port']}"
-        data = fetch_sonarqube_data(api_url, sonarqube_token, "license_usage")
+        data = fetch_sonarqube_data(
+            api_url,
+            sonarqube_token,
+            "license_usage",
+            ignore_ssl=config["sonarqube_ignore_ssl"],
+        )
     uploaded_files = []
 
     for project in data["projects"]:
@@ -311,7 +333,13 @@ def collect_analyses(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
     for project in projects:
         project_key = project["project_key"]
         project_name = project["project_name"]
-        data = fetch_sonarqube_data(api_url, sonarqube_token, "analyses", project_key)
+        data = fetch_sonarqube_data(
+            api_url,
+            sonarqube_token,
+            "analyses",
+            project_key,
+            ignore_ssl=config["sonarqube_ignore_ssl"],
+        )
         logger.info(f"Data: {data}")
         project_data = {
             "tenant": project_name.split("-")[0],  # TODO: make this more robust

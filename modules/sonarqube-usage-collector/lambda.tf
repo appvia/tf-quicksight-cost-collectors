@@ -17,6 +17,7 @@ resource "aws_lambda_function" "usage_collector" {
       SONARQUBE_PORT              = var.sonarqube_port
       SONARQUBE_SCHEME            = var.sonarqube_scheme
       SONARQUBE_TOKEN_SECRET_NAME = var.sonarqube_token_secret_name
+      SONARQUBE_IGNORE_SSL        = var.sonarqube_ignore_ssl
       ATHENA_TABLE_NAME           = var.athena_table_name
       OUTPUT_BUCKET               = var.usage_data_bucket_name
       MOCK_MODE                   = var.mock_mode

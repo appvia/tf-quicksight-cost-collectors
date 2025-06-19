@@ -102,6 +102,12 @@ variable "sonarqube_token_secret_name" {
   default     = "sonarqube-token"
 }
 
+variable "sonarqube_ignore_ssl" {
+  description = "Ignore SSL certificate verification for SonarQube server (useful for self-signed certificates)"
+  type        = bool
+  default     = false
+}
+
 variable "athena_table_name" {
   description = "Name of the Athena table from the shared module"
   type        = string

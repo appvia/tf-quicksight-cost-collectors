@@ -13,7 +13,14 @@ resource "aws_lambda_function" "collector" {
   timeout = 120
   environment {
     variables = {
-      MOCK_MODE = var.mock_mode
+      DYNAMODB_TABLE_NAME                 = aws_dynamodb_table.user_data.name
+      GITLAB_BASE_URL                     = var.gitlab_base_url  
+      GITLAB_PROJECT_ID                   = var.gitlab_project_id
+      GITLAB_ACCESS_TOKEN_SECRET_NAME     = var.gitlab_access_token_secret_name
+      GITLAB_FILE_PATH                    = var.gitlab_file_path
+      GITLAB_REF                          = var.gitlab_ref
+      GITLAB_IGNORE_SSL                   = var.gitlab_ignore_ssl
+      MOCK_MODE                           = var.mock_mode
     }
   }
   filename         = data.archive_file.lambda_zip.output_path
@@ -53,6 +60,11 @@ data "aws_iam_policy_document" "collector" {
       aws_cloudwatch_log_group.collector.arn,
       "${aws_cloudwatch_log_group.collector.arn}:*"
     ]
+  }
+
+  statement {
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = ["arn:aws:secretsmanager:*:*:secret:${var.gitlab_access_token_secret_name}*"]
   }
 }
 

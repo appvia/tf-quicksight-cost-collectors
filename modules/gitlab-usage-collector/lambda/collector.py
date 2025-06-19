@@ -20,6 +20,8 @@ def load_configuration() -> Dict[str, Any]:
         "gitlab_port": os.environ.get("GITLAB_PORT"),
         "gitlab_scheme": os.environ.get("GITLAB_SCHEME"),
         "gitlab_token_secret_name": os.environ.get("GITLAB_TOKEN_SECRET_NAME"),
+        "gitlab_ignore_ssl": os.environ.get("GITLAB_IGNORE_SSL", "false").lower()
+        == "true",
         "gitlab_required_fields": os.environ.get("GITLAB_REQUIRED_FIELDS", "all"),
         "gitlab_external_users": os.environ.get(
             "GITLAB_EXTERNAL_USERS", "false"
@@ -97,10 +99,20 @@ def get_gitlab_token(config: Dict[str, Any]) -> str:
 
 
 def fetch_gitlab_data(
-    api_url: str, token: str, metric_type: str, config: Dict[str, Any] = None
+    api_url: str,
+    token: str,
+    metric_type: str,
+    config: Dict[str, Any] = None,
+    ignore_ssl: bool = False,
 ) -> List[Dict[str, Any]]:
     """Fetch data from GitLab API."""
-    http = urllib3.PoolManager()
+    if ignore_ssl:
+        # Disable SSL verification and suppress warnings
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        http = urllib3.PoolManager(cert_reqs="CERT_NONE", assert_hostname=False)
+        print("SSL verification disabled for GitLab API requests")
+    else:
+        http = urllib3.PoolManager()
 
     endpoint = METRIC_ENDPOINTS[metric_type]
     full_url = f"{api_url}{endpoint}"
@@ -166,7 +178,13 @@ def collect_users(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
     else:
         gitlab_token = get_gitlab_token(config)
         api_url = f"{config['gitlab_scheme']}://{config['gitlab_domain']}:{config['gitlab_port']}"
-        data = fetch_gitlab_data(api_url, gitlab_token, "users", config)
+        data = fetch_gitlab_data(
+            api_url,
+            gitlab_token,
+            "users",
+            config,
+            ignore_ssl=config["gitlab_ignore_ssl"],
+        )
 
     if not data:
         return []
@@ -224,11 +242,19 @@ def collect_ci_minutes(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
         api_url = f"{config['gitlab_scheme']}://{config['gitlab_domain']}:{config['gitlab_port']}"
 
         # First get all namespaces (groups and subgroups)
-        namespaces = fetch_gitlab_data(api_url, gitlab_token, "ci_minutes")
+        namespaces = fetch_gitlab_data(
+            api_url, gitlab_token, "ci_minutes", ignore_ssl=config["gitlab_ignore_ssl"]
+        )
 
         # Then get CI usage for each namespace via GraphQL
         data = []
-        http = urllib3.PoolManager()
+        if config["gitlab_ignore_ssl"]:
+            # Disable SSL verification and suppress warnings
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            http = urllib3.PoolManager(cert_reqs="CERT_NONE", assert_hostname=False)
+            print("SSL verification disabled for GitLab GraphQL API requests")
+        else:
+            http = urllib3.PoolManager()
 
         # Get the first day of the current month for the GraphQL query
         current_time = datetime.datetime.fromisoformat(timestamp_iso)

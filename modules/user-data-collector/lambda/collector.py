@@ -16,13 +16,17 @@ def load_configuration() -> Dict[str, Any]:
             "GITLAB_BASE_URL", "https://gitlab.example.com"
         ),
         "gitlab_project_id": os.environ.get("GITLAB_PROJECT_ID", "13083"),
-        "gitlab_access_token": os.environ.get("GITLAB_ACCESS_TOKEN"),
+        "gitlab_access_token_secret_name": os.environ.get(
+            "GITLAB_ACCESS_TOKEN_SECRET_NAME", "gitlab-access-token"
+        ),
         "gitlab_file_path": os.environ.get("GITLAB_FILE_PATH", "users.json"),
         "gitlab_ref": os.environ.get("GITLAB_REF", "main"),
+        "gitlab_ignore_ssl": os.environ.get("GITLAB_IGNORE_SSL", "false").lower()
+        == "true",
     }
 
     # Validate required configuration
-    required_fields = ["gitlab_access_token"]
+    required_fields = ["gitlab_access_token_secret_name"]
     missing_fields = [field for field in required_fields if not config[field]]
 
     if missing_fields:
@@ -33,6 +37,18 @@ def load_configuration() -> Dict[str, Any]:
     return config
 
 
+def get_gitlab_token(config: Dict[str, Any]) -> str:
+    """Get GitLab token from secrets manager."""
+    try:
+        secrets_manager = boto3.client("secretsmanager")
+        secret_value = secrets_manager.get_secret_value(
+            SecretId=config["gitlab_access_token_secret_name"]
+        )
+        return secret_value["SecretString"]
+    except Exception as e:
+        raise Exception(f"Error getting GitLab token from secrets manager: {str(e)}")
+
+
 def fetch_user_data_from_gitlab(config: Dict[str, Any]):
     """Fetch user data from GitLab repository"""
     # URL encode the file path
@@ -41,9 +57,17 @@ def fetch_user_data_from_gitlab(config: Dict[str, Any]):
     # Construct the GitLab API URL
     url = f"{config['gitlab_base_url']}/api/v4/projects/{config['gitlab_project_id']}/repository/files/{encoded_file_path}/raw?ref={config['gitlab_ref']}"
 
-    headers = {"PRIVATE-TOKEN": config["gitlab_access_token"]}
+    gitlab_token = get_gitlab_token(config)
+    headers = {"PRIVATE-TOKEN": gitlab_token}
 
-    http = urllib3.PoolManager()
+    if config["gitlab_ignore_ssl"]:
+        # Disable SSL verification and suppress warnings
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        http = urllib3.PoolManager(cert_reqs="CERT_NONE", assert_hostname=False)
+        print("SSL verification disabled for GitLab API requests")
+    else:
+        http = urllib3.PoolManager()
+
     try:
         response = http.request("GET", url, headers=headers)
         if response.status == 200:
