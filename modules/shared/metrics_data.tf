@@ -13,7 +13,7 @@ resource "aws_glue_catalog_table" "application_metrics_data" {
   }
 
   storage_descriptor {
-    location      = "s3://${module.s3_bucket_cost_data[0].s3_bucket_id}/metrics/*"
+    location      = "s3://${module.s3_bucket_cost_data[0].s3_bucket_id}/metrics/"
     input_format  = "com.amazon.ionhiveserde.formats.IonInputFormat"
     output_format = "com.amazon.ionhiveserde.formats.IonOutputFormat"
 
