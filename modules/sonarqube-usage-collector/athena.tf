@@ -132,19 +132,24 @@ resource "aws_glue_catalog_table" "sonarqube_analyses_data" {
       comment = "The unique key for the project (data field)."
     }
     columns {
-      name    = "lines_of_code"
+      name    = "analysis_count"
       type    = "bigint"
-      comment = "Number of lines of code in the project."
+      comment = "Number of analyses in the project."
     }
     columns {
-      name    = "license_usage_percentage"
-      type    = "double"
-      comment = "Percentage of license usage."
+      name    = "last_analysis_date"
+      type    = "string"
+      comment = "The date of the last analysis."
     }
     columns {
       name    = "timestamp"
       type    = "timestamp" # ISO 8601 timestamps like "2025-05-16T16:05:34.228361"
       comment = "Timestamp of the data extraction."
+    }
+    columns {
+      name    = "last_analysis_status"
+      type    = "string"
+      comment = "The status of the last analysis."
     }
 
     input_format  = "org.apache.hadoop.mapred.TextInputFormat"
