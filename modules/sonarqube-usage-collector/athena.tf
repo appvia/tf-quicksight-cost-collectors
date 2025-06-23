@@ -114,7 +114,7 @@ resource "aws_quicksight_data_set" "sonarqube_usage_data" {
         type = "STRING"
       }
       columns {
-        name = "analysis_count"
+        name = "analyses_count"
         type = "INTEGER"
       }
       columns {

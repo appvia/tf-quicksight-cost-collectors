@@ -13,17 +13,17 @@ resource "aws_lambda_function" "usage_collector" {
   timeout = 120
   environment {
     variables = {
-      GITLAB_DOMAIN                    = var.gitlab_domain
-      GITLAB_PORT                      = var.gitlab_port
-      GITLAB_SCHEME                    = var.gitlab_scheme
-      GITLAB_TOKEN_SECRET_NAME         = var.gitlab_token_secret_name
-      GITLAB_IGNORE_SSL                = var.gitlab_ignore_ssl
-      GITLAB_REQUIRED_FIELDS           = var.gitlab_required_fields
-      GITLAB_EXTERNAL_USERS            = var.gitlab_external_users
-      GITLAB_ACTIVE_USERS_ONLY         = var.gitlab_active_users_only
-      USER_DATA_DYNAMODB_TABLE_NAME    = var.user_data_dynamodb_table_name
-      OUTPUT_BUCKET                    = var.usage_data_bucket_name
-      MOCK_MODE                        = var.mock_mode
+      GITLAB_DOMAIN                 = var.gitlab_domain
+      GITLAB_PORT                   = var.gitlab_port
+      GITLAB_SCHEME                 = var.gitlab_scheme
+      GITLAB_TOKEN_SECRET_NAME      = var.gitlab_token_secret_name
+      GITLAB_IGNORE_SSL             = var.gitlab_ignore_ssl
+      GITLAB_REQUIRED_FIELDS        = var.gitlab_required_fields
+      GITLAB_EXTERNAL_USERS         = var.gitlab_external_users
+      GITLAB_ACTIVE_USERS_ONLY      = var.gitlab_active_users_only
+      USER_DATA_DYNAMODB_TABLE_NAME = var.user_data_dynamodb_table_name
+      OUTPUT_BUCKET                 = var.usage_data_bucket_name
+      MOCK_MODE                     = var.mock_mode
     }
   }
   filename         = data.archive_file.lambda_zip.output_path

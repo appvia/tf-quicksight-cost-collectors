@@ -309,29 +309,21 @@ def collect_analyses(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
         for project in data["projects"]:
             logger.info(f"Processing project: {project['projectKey']}")
 
-            # Create separate records for each metric
-            metrics = [
-                ("last_analysis_date", project["lastAnalysisDate"]),
-                ("analysis_count", project["analysisCount"]),
-                ("last_analysis_status", project["lastAnalysisStatus"]),
-            ]
-
-            for metric_name, metric_value in metrics:
-                project_data = {
-                    "tenant": project["projectName"].split("-")[
-                        0
-                    ],  # TODO: make this more robust
-                    "project_key": project["projectKey"],
-                    "project_name": project["projectName"],
-                    "timestamp": timestamp_iso,
-                    "metric_name": metric_name,
-                    "metric_value": metric_value,
-                }
-                logger.info(f"Uploading project data to S3: {project_data}")
-                s3_key = f"sonarqube/{timestamp_iso[:7]}/{project['projectKey']}_{metric_name}_{timestamp_iso[11:16]}.json"
-                logger.info(f"S3 key: {s3_key}")
-                upload_to_s3(config, s3_key, project_data)
-                uploaded_files.append(s3_key)
+            project_data = {
+                "tenant": project["projectName"].split("-")[
+                    0
+                ],  # TODO: make this more robust
+                "project_key": project["projectKey"],
+                "project_name": project["projectName"],
+                "timestamp": timestamp_iso,
+                "metric_name": "analyses_count",
+                "metric_value": project["analysisCount"],
+            }
+            logger.info(f"Uploading project data to S3: {project_data}")
+            s3_key = f"sonarqube/{timestamp_iso[:7]}/{project['projectKey']}_analyses_count_{timestamp_iso[11:16]}.json"
+            logger.info(f"S3 key: {s3_key}")
+            upload_to_s3(config, s3_key, project_data)
+            uploaded_files.append(s3_key)
 
         return uploaded_files
 
@@ -352,27 +344,20 @@ def collect_analyses(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
         )
         logger.info(f"Data: {data}")
 
-        # Create separate records for each metric
-        metrics = [
-            ("last_analysis_date", data["lastAnalysisDate"]),
-            ("analysis_count", data["analysisCount"]),
-            ("last_analysis_status", data["lastAnalysisStatus"]),
-        ]
-
-        for metric_name, metric_value in metrics:
-            project_data = {
-                "tenant": project_name.split("-")[0],  # TODO: make this more robust
-                "project_key": project_key,
-                "project_name": project_name,
-                "timestamp": timestamp_iso,
-                "metric_name": metric_name,
-                "metric_value": metric_value,
-            }
-            logger.info(f"Project data: {project_data}")
-            s3_key = f"sonarqube/{timestamp_iso[:7]}/{project_key}_{metric_name}_{timestamp_iso[11:16]}.json"
-            logger.info(f"S3 key: {s3_key}")
-            upload_to_s3(config, s3_key, project_data)
-            uploaded_files.append(s3_key)
+        # Only collect analyses_count metric
+        project_data = {
+            "tenant": project_name.split("-")[0],  # TODO: make this more robust
+            "project_key": project_key,
+            "project_name": project_name,
+            "timestamp": timestamp_iso,
+            "metric_name": "analyses_count",
+            "metric_value": data["analysisCount"],
+        }
+        logger.info(f"Project data: {project_data}")
+        s3_key = f"sonarqube/{timestamp_iso[:7]}/{project_key}_analyses_count_{timestamp_iso[11:16]}.json"
+        logger.info(f"S3 key: {s3_key}")
+        upload_to_s3(config, s3_key, project_data)
+        uploaded_files.append(s3_key)
 
     return uploaded_files
 
