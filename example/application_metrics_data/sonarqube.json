@@ -1,0 +1,19 @@
+{
+    "application_name": "sonarqube",
+    "start_date": "2025-01-01",
+    "end_date": "2025-12-31",
+    "metrics": [
+        {
+            "metric_name": "users",
+            "metric_weight": 60
+        },
+        {
+            "metric_name": "projects",
+            "metric_weight": 20
+        },
+        {
+            "metric_name": "analyses",
+            "metric_weight": 20
+        }
+    ]
+}

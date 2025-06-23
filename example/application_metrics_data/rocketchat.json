@@ -1,0 +1,19 @@
+{
+    "application_name": "rocketchat",
+    "start_date": "2025-03-15",
+    "end_date": "2026-03-14",
+    "metrics": [
+        {
+            "metric_name": "users",
+            "metric_weight": 80
+        },
+        {
+            "metric_name": "channels",
+            "metric_weight": 15
+        },
+        {
+            "metric_name": "messages",
+            "metric_weight": 5
+        }
+    ]
+}

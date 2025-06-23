@@ -8,22 +8,17 @@ resource "aws_glue_catalog_table" "application_metrics_data" {
 
   parameters = {
     EXTERNAL         = "TRUE"
-    "classification" = "json"
+    "classification" = "ion"
     "typeOfData"     = "file"
   }
 
   storage_descriptor {
     location      = "s3://${module.s3_bucket_cost_data[0].s3_bucket_id}/metrics/"
-    input_format  = "org.apache.hadoop.mapred.TextInputFormat"
-    output_format = "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
+    input_format  = "com.amazon.ionhiveserde.formats.IonInputFormat"
+    output_format = "com.amazon.ionhiveserde.formats.IonOutputFormat"
 
     ser_de_info {
-      name                  = "JsonSerDe"
-      serialization_library = "org.openx.data.jsonserde.JsonSerDe"
-
-      parameters = {
-        "serialization.format" = "1"
-      }
+      serialization_library = "com.amazon.ionhiveserde.IonHiveSerDe"
     }
 
     columns {

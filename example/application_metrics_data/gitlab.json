@@ -1,0 +1,19 @@
+{
+    "application_name": "gitlab",
+    "start_date": "2025-01-01",
+    "end_date": "2025-12-31",
+    "metrics": [
+        {
+            "metric_name": "users",
+            "metric_weight": 70
+        },
+        {
+            "metric_name": "projects",
+            "metric_weight": 20
+        },
+        {
+            "metric_name": "ci_minutes",
+            "metric_weight": 10
+        }
+    ]
+}
