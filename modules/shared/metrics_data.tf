@@ -1,4 +1,4 @@
-# Create the Glue catalog table for application cost data (ie how much a license costs for a set period)
+# Create the Glue catalog table for application metrics data (nested structure)
 resource "aws_glue_catalog_table" "application_metrics_data" {
   count         = var.create_cost_data_bucket ? 1 : 0
   name          = "application_metrics_data"
@@ -8,26 +8,27 @@ resource "aws_glue_catalog_table" "application_metrics_data" {
 
   parameters = {
     EXTERNAL         = "TRUE"
-    "classification" = "ion"
+    "classification" = "json"
     "typeOfData"     = "file"
   }
 
   storage_descriptor {
     location      = "s3://${module.s3_bucket_cost_data[0].s3_bucket_id}/metrics/"
-    input_format  = "com.amazon.ionhiveserde.formats.IonInputFormat"
-    output_format = "com.amazon.ionhiveserde.formats.IonOutputFormat"
+    input_format  = "org.apache.hadoop.mapred.TextInputFormat"
+    output_format = "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
 
     ser_de_info {
-      serialization_library = "com.amazon.ionhiveserde.IonHiveSerDe"
+      name                  = "JsonSerDe"
+      serialization_library = "org.openx.data.jsonserde.JsonSerDe"
+
+      parameters = {
+        "serialization.format" = "1"
+      }
     }
 
     columns {
-      name = "metric_name"
+      name = "application_name"
       type = "string"
-    }
-    columns {
-      name = "metric_weight"
-      type = "int"
     }
     columns {
       name = "start_date"
@@ -38,8 +39,8 @@ resource "aws_glue_catalog_table" "application_metrics_data" {
       type = "string"
     }
     columns {
-      name = "application_name"
-      type = "string"
+      name = "metrics"
+      type = "array<struct<metric_name:string,metric_weight:int>>"
     }
   }
 }
