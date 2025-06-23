@@ -256,7 +256,7 @@ def collect_lines_of_code(config: Dict[str, Any], timestamp_iso: str) -> List[st
             "metric_value": project["linesOfCode"],
         }
         logger.info(f"Project data: {project_data}")
-        s3_key = f"sonarqube/lines_of_code/{timestamp_iso[:7]}/{project['projectKey']}_{timestamp_iso[11:16]}.json"
+        s3_key = f"sonarqube/{timestamp_iso[:7]}/{project['projectKey']}_lines_of_code_{timestamp_iso[11:16]}.json"
         upload_to_s3(config, s3_key, project_data)
         uploaded_files.append(s3_key)
 
@@ -293,7 +293,7 @@ def collect_license_usage(config: Dict[str, Any], timestamp_iso: str) -> List[st
             "metric_value": project["licenseUsagePercentage"],
         }
         logger.info(f"Project data: {project_data}")
-        s3_key = f"sonarqube/license_usage/{timestamp_iso[:7]}/{project['projectKey']}_{timestamp_iso[11:16]}.json"
+        s3_key = f"sonarqube/{timestamp_iso[:7]}/{project['projectKey']}_license_usage_percentage_{timestamp_iso[11:16]}.json"
         upload_to_s3(config, s3_key, project_data)
         uploaded_files.append(s3_key)
     return uploaded_files
@@ -328,7 +328,7 @@ def collect_analyses(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
                     "metric_value": metric_value,
                 }
                 logger.info(f"Uploading project data to S3: {project_data}")
-                s3_key = f"sonarqube/analyses/{timestamp_iso[:7]}/{project['projectKey']}_{metric_name}_{timestamp_iso[11:16]}.json"
+                s3_key = f"sonarqube/{timestamp_iso[:7]}/{project['projectKey']}_{metric_name}_{timestamp_iso[11:16]}.json"
                 logger.info(f"S3 key: {s3_key}")
                 upload_to_s3(config, s3_key, project_data)
                 uploaded_files.append(s3_key)
@@ -369,7 +369,7 @@ def collect_analyses(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
                 "metric_value": metric_value,
             }
             logger.info(f"Project data: {project_data}")
-            s3_key = f"sonarqube/analyses/{timestamp_iso[:7]}/{project_key}_{metric_name}_{timestamp_iso[11:16]}.json"
+            s3_key = f"sonarqube/{timestamp_iso[:7]}/{project_key}_{metric_name}_{timestamp_iso[11:16]}.json"
             logger.info(f"S3 key: {s3_key}")
             upload_to_s3(config, s3_key, project_data)
             uploaded_files.append(s3_key)
