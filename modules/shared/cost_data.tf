@@ -75,7 +75,7 @@ resource "aws_glue_catalog_table" "application_cost_data" {
   }
 
   storage_descriptor {
-    location      = "s3://${module.s3_bucket_cost_data[0].s3_bucket_id}/contracts/"
+    location      = "s3://${module.s3_bucket_cost_data[0].s3_bucket_id}/"
     input_format  = "com.amazon.ionhiveserde.formats.IonInputFormat"
     output_format = "com.amazon.ionhiveserde.formats.IonOutputFormat"
 
@@ -106,6 +106,10 @@ resource "aws_glue_catalog_table" "application_cost_data" {
     columns {
       name = "end_date"
       type = "string"
+    }
+    columns {
+      name = "metrics"
+      type = "array<struct<metric_name:string,metric_weight:int>>"
     }
 
   }
