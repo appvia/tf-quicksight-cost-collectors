@@ -8,15 +8,15 @@
     "metrics": [
         {
             "metric_name": "users",
-            "metric_weight": 60
+            "metric_weight": 0.6
         },
         {
             "metric_name": "projects",
-            "metric_weight": 20
+            "metric_weight": 0.2
         },
         {
             "metric_name": "analyses",
-            "metric_weight": 20
+            "metric_weight": 0.2
         }
     ]
 }

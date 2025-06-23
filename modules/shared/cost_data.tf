@@ -109,7 +109,7 @@ resource "aws_glue_catalog_table" "application_cost_data" {
     }
     columns {
       name = "metrics"
-      type = "array<struct<metric_name:string,metric_weight:int>>"
+      type = "array<struct<metric_name:string,metric_weight:decimal(3,2)>>"
     }
 
   }
