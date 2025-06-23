@@ -29,5 +29,17 @@ resource "aws_glue_catalog_table" "application_metrics_data" {
       name = "metric_weight"
       type = "int"
     }
+    columns {
+      name = "start_date"
+      type = "string"
+    }
+    columns {
+      name = "end_date"
+      type = "string"
+    }
+    columns {
+      name = "application_name"
+      type = "string"
+    }
   }
 }
