@@ -22,7 +22,7 @@ variable "vpc_config" {
 variable "lambda_zip_output_path" {
   description = "Output path for the lambda zip file"
   type        = string
-  default     = "build/lambda.zip"
+  default     = "build/user-data-collector.zip"
 }
 
 variable "log_retention_in_days" {

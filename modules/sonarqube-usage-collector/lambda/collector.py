@@ -299,7 +299,7 @@ def collect_license_usage(config: Dict[str, Any], timestamp_iso: str) -> List[st
     return uploaded_files
 
 
-def collect_analyses(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
+def collect_analyses_count(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
     """Collect analyses metric."""
     if config["mock_mode"]:
         logger.info("Mock mode enabled, generating mock data")
@@ -379,14 +379,14 @@ def upload_to_s3(config: Dict[str, Any], s3_key: str, data: Dict[str, Any]) -> N
 METRIC_ENDPOINTS = {
     "lines_of_code": "/api/projects/license_usage",
     "license_usage": "/api/projects/license_usage",
-    "analyses": "/api/project_analyses",
+    "analyses_count": "/api/project_analyses",
 }
 
 # Map of metric types to their collection functions
 METRIC_COLLECTORS: Dict[str, Callable] = {
     "lines_of_code": collect_lines_of_code,
     "license_usage": collect_license_usage,
-    "analyses": collect_analyses,
+    "analyses_count": collect_analyses_count,
 }
 
 

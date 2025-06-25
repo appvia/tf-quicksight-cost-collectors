@@ -11,7 +11,7 @@
             "metric_weight": 0.8
         },
         {
-            "metric_name": "analyses",
+            "metric_name": "analyses_count",
             "metric_weight": 0.2
         }
     ]

@@ -69,7 +69,7 @@ variable "vpc_name" {
 variable "lambda_zip_output_path" {
   description = "Output path for the lambda zip file"
   type        = string
-  default     = "build/lambda.zip"
+  default     = "build/sonarqube-usage-collector.zip"
 }
 
 variable "log_retention_in_days" {
