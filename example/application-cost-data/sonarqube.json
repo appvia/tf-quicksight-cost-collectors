@@ -1,0 +1,18 @@
+{
+    "application_name": "sonarqube",
+    "source_annual_cost": 12000,
+    "source_currency": "USD",
+    "gbp_annual_cost": 9360,
+    "start_date": "2025-01-01",
+    "end_date": "2025-12-31",
+    "metrics": [
+        {
+            "metric_name": "lines_of_code",
+            "metric_weight": 0.8
+        },
+        {
+            "metric_name": "analyses_count",
+            "metric_weight": 0.2
+        }
+    ]
+}

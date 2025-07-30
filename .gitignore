@@ -33,3 +33,11 @@ override.tf.json
 .terraformrc
 terraform.rc
 modules/sonarqube-cost-collector/.DS_Store
+
+.DS_Store
+
+.venv/
+.pycache/
+*.pyc
+
+.ruff_cache/

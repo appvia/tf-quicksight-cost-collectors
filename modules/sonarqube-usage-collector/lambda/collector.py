@@ -1,0 +1,450 @@
+import json
+import logging
+import boto3
+import os
+from datetime import datetime, timezone
+import urllib3
+import random
+from typing import Dict, List, Any, Callable
+import time
+
+
+class JsonFormatter(logging.Formatter):
+    """Custom JSON formatter for structured logging."""
+
+    def format(self, record):
+        # Get all standard logging fields
+        log_record = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
+        }
+
+        # Get all standard LogRecord attributes
+        standard_attrs = set(dir(logging.LogRecord("", 0, "", 0, "", (), None)))
+
+        # Add any extra fields that were passed in
+        for key, value in record.__dict__.items():
+            if key not in standard_attrs:
+                log_record[key] = value
+
+        return json.dumps(log_record)
+
+
+# Configure logging
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+logger = logging.getLogger()
+logger.setLevel(getattr(logging, LOG_LEVEL))
+
+# Remove existing handlers
+for handler in logger.handlers[:]:
+    logger.removeHandler(handler)
+
+# Add JSON formatter
+handler = logging.StreamHandler()
+handler.setFormatter(JsonFormatter())
+logger.addHandler(handler)
+
+
+def load_configuration() -> Dict[str, Any]:
+    """Load and validate environment variables."""
+    config = {
+        "sonarqube_domain": os.environ.get("SONARQUBE_DOMAIN"),
+        "sonarqube_port": os.environ.get("SONARQUBE_PORT"),
+        "sonarqube_scheme": os.environ.get("SONARQUBE_SCHEME"),
+        "sonarqube_token_secret_name": os.environ.get("SONARQUBE_TOKEN_SECRET_NAME"),
+        "sonarqube_ignore_ssl": os.environ.get("SONARQUBE_IGNORE_SSL", "false").lower()
+        == "true",
+        "output_bucket": os.environ.get("OUTPUT_BUCKET"),
+        "mock_mode": os.environ.get("MOCK_MODE", "false").lower() == "true",
+        "athena_projects_table_name": os.environ.get("ATHENA_TABLE_NAME"),
+    }
+
+    # Validate required configuration (skip token validation in mock mode)
+    required_fields = [
+        "sonarqube_domain",
+        "sonarqube_port",
+        "sonarqube_scheme",
+        "output_bucket",
+        "sonarqube_token_secret_name",
+        "athena_projects_table_name",
+    ]
+
+    missing_fields = [field for field in required_fields if not config[field]]
+
+    if missing_fields and not config["mock_mode"]:
+        logger.error(
+            f"Missing required environment variables: {', '.join(missing_fields)}"
+        )
+        raise ValueError(
+            f"Missing required environment variables: {', '.join(missing_fields)}"
+        )
+    logger.info(f"Configuration loaded: {config}")
+    return config
+
+
+def generate_mock_data(metric_type: str) -> Dict[str, List[Dict[str, Any]]]:
+    """Generate mock project data for testing."""
+    base_projects = [
+        {
+            "projectName": [f"mock-project-{i}", f"test-project-{i}"][
+                random.randint(0, 1)
+            ],
+            "projectKey": f"PK-{i}",
+        }
+        for i in range(1, 6)
+    ]
+
+    # Add metric-specific data
+    for project in base_projects:
+        if metric_type == "lines_of_code":
+            project["linesOfCode"] = random.randint(900, 99999)
+        elif metric_type == "license_usage":
+            project["licenseUsagePercentage"] = round(random.uniform(0, 3), 2)
+        elif metric_type == "analyses":
+            project["lastAnalysisDate"] = datetime.now().isoformat()
+            project["analysisCount"] = random.randint(1, 100)
+            project["lastAnalysisStatus"] = random.choice(
+                ["SUCCESS", "FAILED", "IN_PROGRESS"]
+            )
+
+    return {"projects": base_projects}
+
+
+def fetch_sonarqube_data(
+    api_url: str,
+    token: str,
+    metric_type: str,
+    project_key: str = None,
+    ignore_ssl: bool = False,
+) -> Dict[str, Any]:
+    """Fetch project data from SonarQube API."""
+    if ignore_ssl:
+        # Disable SSL verification and suppress warnings
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        http = urllib3.PoolManager(cert_reqs="CERT_NONE", assert_hostname=False)
+        logger.info("SSL verification disabled for SonarQube API requests")
+    else:
+        http = urllib3.PoolManager()
+
+    endpoint = METRIC_ENDPOINTS[metric_type]
+    full_url = f"{api_url}{endpoint}"
+
+    # Add project key to URL if provided
+    if project_key:
+        full_url = f"{full_url}?project={project_key}"
+
+    # Make request using basic auth (token as username, empty password)
+    headers = urllib3.make_headers(basic_auth=f"{token}:")
+    response = http.request(
+        "GET",
+        full_url,
+        headers=headers,
+    )
+
+    if response.status != 200:
+        raise Exception(f"Failed to fetch data from SonarQube API: {response.status}")
+
+    return json.loads(response.data.decode("utf-8"))
+
+
+def get_sonarqube_token(config: Dict[str, Any]) -> str:
+    """Get SonarQube token from secrets manager."""
+    try:
+        secret_manager_client = boto3.client("secretsmanager")
+        response = secret_manager_client.get_secret_value(
+            SecretId=config["sonarqube_token_secret_name"]
+        )
+        sonarqube_token = response.get("SecretString")
+        if (
+            not sonarqube_token
+            or sonarqube_token is None
+            or sonarqube_token in ["", "null", "None", "undefined"]
+        ):
+            raise Exception(f"SonarQube token is empty or invalid: {sonarqube_token}")
+        logger.info("Successfully retrieved SonarQube token from secrets manager")
+        return sonarqube_token
+    except Exception as e:
+        raise Exception(f"Error getting SonarQube token from secrets manager: {str(e)}")
+
+
+def get_projects(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Get projects from Athena table."""
+    athena_client = boto3.client("athena")
+    # execute query
+    try:
+        response = athena_client.start_query_execution(
+            QueryString=f"SELECT project_key, project_name FROM {config['athena_projects_table_name']}",
+            ResultConfiguration={"OutputLocation": config["output_bucket"]},
+        )
+    except Exception as e:
+        raise Exception(f"Error starting query execution: {str(e)}")
+
+    query_execution_id = response["QueryExecutionId"]
+    max_wait_time = 300  # 5 minutes timeout
+    elapsed_time = 0
+
+    # wait for query to complete with timeout
+    while elapsed_time < max_wait_time:
+        logger.info(
+            f"Waiting for query to complete: {query_execution_id}, elapsed: {elapsed_time}s"
+        )
+        try:
+            response = athena_client.get_query_execution(
+                QueryExecutionId=query_execution_id
+            )
+        except Exception as e:
+            raise Exception(f"Error getting query execution: {str(e)}")
+
+        state = response["QueryExecution"]["Status"]["State"]
+        if state == "SUCCEEDED":
+            break
+        elif state in ["FAILED", "CANCELLED"]:
+            raise Exception(
+                f"Query {state.lower()}: {response['QueryExecution']['Status'].get('StateChangeReason', 'Unknown reason')}"
+            )
+        elif state in ["RUNNING", "QUEUED"]:
+            time.sleep(1)
+            elapsed_time += 1
+        else:
+            raise Exception(f"Unknown query state: {state}")
+
+    if elapsed_time >= max_wait_time:
+        raise Exception(f"Query timed out after {max_wait_time} seconds")
+
+    logger.info(f"Query completed: {query_execution_id}")
+    # get query results
+    try:
+        response = athena_client.get_query_results(QueryExecutionId=query_execution_id)
+    except Exception as e:
+        raise Exception(f"Error getting query results: {str(e)}")
+    # return query results
+    return response["ResultSet"]["Rows"]
+
+
+def collect_lines_of_code(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
+    """Collect lines of code metric."""
+    if config["mock_mode"]:
+        logger.info("Mock mode enabled, generating mock data")
+        data = generate_mock_data("lines_of_code")
+        logger.info(f"Data: {data}")
+    else:
+        sonarqube_token = get_sonarqube_token(config)
+        api_url = f"{config['sonarqube_scheme']}://{config['sonarqube_domain']}:{config['sonarqube_port']}"
+        data = fetch_sonarqube_data(
+            api_url,
+            sonarqube_token,
+            "lines_of_code",
+            ignore_ssl=config["sonarqube_ignore_ssl"],
+        )
+
+    uploaded_files = []
+
+    for project in data["projects"]:
+        logger.info(f"Processing project: {project['projectKey']}")
+        project_data = {
+            "tenant": project["projectName"].split("-")[
+                0
+            ],  # TODO: make this more robust
+            "project_key": project["projectKey"],
+            "project_name": project["projectName"],
+            "timestamp": timestamp_iso,
+            "metric_name": "lines_of_code",
+            "metric_value": project["linesOfCode"],
+        }
+        logger.info(f"Project data: {project_data}")
+        s3_key = f"sonarqube/{timestamp_iso[:7]}/{project['projectKey']}_lines_of_code_{timestamp_iso[11:16]}.json"
+        upload_to_s3(config, s3_key, project_data)
+        uploaded_files.append(s3_key)
+
+    return uploaded_files
+
+
+def collect_license_usage(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
+    """Collect license usage metric."""
+    if config["mock_mode"]:
+        logger.info("Mock mode enabled, generating mock data")
+        data = generate_mock_data("license_usage")
+        logger.info(f"Data: {data}")
+    else:
+        sonarqube_token = get_sonarqube_token(config)
+        api_url = f"{config['sonarqube_scheme']}://{config['sonarqube_domain']}:{config['sonarqube_port']}"
+        data = fetch_sonarqube_data(
+            api_url,
+            sonarqube_token,
+            "license_usage",
+            ignore_ssl=config["sonarqube_ignore_ssl"],
+        )
+    uploaded_files = []
+
+    for project in data["projects"]:
+        logger.info(f"Processing project: {project['projectKey']}")
+        project_data = {
+            "tenant": project["projectName"].split("-")[
+                0
+            ],  # TODO: make this more robust
+            "project_key": project["projectKey"],
+            "project_name": project["projectName"],
+            "timestamp": timestamp_iso,
+            "metric_name": "license_usage_percentage",
+            "metric_value": project["licenseUsagePercentage"],
+        }
+        logger.info(f"Project data: {project_data}")
+        s3_key = f"sonarqube/{timestamp_iso[:7]}/{project['projectKey']}_license_usage_percentage_{timestamp_iso[11:16]}.json"
+        upload_to_s3(config, s3_key, project_data)
+        uploaded_files.append(s3_key)
+    return uploaded_files
+
+
+def collect_analyses_count(config: Dict[str, Any], timestamp_iso: str) -> List[str]:
+    """Collect analyses metric."""
+    if config["mock_mode"]:
+        logger.info("Mock mode enabled, generating mock data")
+        data = generate_mock_data("analyses")
+        uploaded_files = []
+
+        for project in data["projects"]:
+            logger.info(f"Processing project: {project['projectKey']}")
+
+            project_data = {
+                "tenant": project["projectName"].split("-")[
+                    0
+                ],  # TODO: make this more robust
+                "project_key": project["projectKey"],
+                "project_name": project["projectName"],
+                "timestamp": timestamp_iso,
+                "metric_name": "analyses_count",
+                "metric_value": project["analysisCount"],
+            }
+            logger.info(f"Uploading project data to S3: {project_data}")
+            s3_key = f"sonarqube/{timestamp_iso[:7]}/{project['projectKey']}_analyses_count_{timestamp_iso[11:16]}.json"
+            logger.info(f"S3 key: {s3_key}")
+            upload_to_s3(config, s3_key, project_data)
+            uploaded_files.append(s3_key)
+
+        return uploaded_files
+
+    sonarqube_token = get_sonarqube_token(config)
+    api_url = f"{config['sonarqube_scheme']}://{config['sonarqube_domain']}:{config['sonarqube_port']}"
+    projects = get_projects(config)
+    logger.info(f"Projects: {projects}")
+    uploaded_files = []
+    for project in projects:
+        project_key = project["project_key"]
+        project_name = project["project_name"]
+        data = fetch_sonarqube_data(
+            api_url,
+            sonarqube_token,
+            "analyses",
+            project_key,
+            ignore_ssl=config["sonarqube_ignore_ssl"],
+        )
+        logger.info(f"Data: {data}")
+
+        # Only collect analyses_count metric
+        project_data = {
+            "tenant": project_name.split("-")[0],  # TODO: make this more robust
+            "project_key": project_key,
+            "project_name": project_name,
+            "timestamp": timestamp_iso,
+            "metric_name": "analyses_count",
+            "metric_value": data["analysisCount"],
+        }
+        logger.info(f"Project data: {project_data}")
+        s3_key = f"sonarqube/{timestamp_iso[:7]}/{project_key}_analyses_count_{timestamp_iso[11:16]}.json"
+        logger.info(f"S3 key: {s3_key}")
+        upload_to_s3(config, s3_key, project_data)
+        uploaded_files.append(s3_key)
+
+    return uploaded_files
+
+
+def upload_to_s3(config: Dict[str, Any], s3_key: str, data: Dict[str, Any]) -> None:
+    """Upload data to S3."""
+    logger.info(f"Uploading data to S3: {s3_key}")
+    s3_client = boto3.client("s3")
+    logger.debug(f"Creating S3 client: {s3_client}")
+    s3_client.put_object(
+        Bucket=config["output_bucket"],
+        Key=s3_key,
+        Body=json.dumps(data),
+    )
+    logger.info(f"Data uploaded to S3: {s3_key}")
+
+
+# Map metric types to their API endpoints
+METRIC_ENDPOINTS = {
+    "lines_of_code": "/api/projects/license_usage",
+    "license_usage": "/api/projects/license_usage",
+    "analyses_count": "/api/project_analyses",
+}
+
+# Map of metric types to their collection functions
+METRIC_COLLECTORS: Dict[str, Callable] = {
+    "lines_of_code": collect_lines_of_code,
+    "license_usage": collect_license_usage,
+    "analyses_count": collect_analyses_count,
+}
+
+
+def handler(event, context):
+    """Main Lambda handler function."""
+    try:
+        # Load configuration
+        config = load_configuration()
+
+        # Get metric type from event, default to lines of code
+        metric_type = event.get("metric_type", "lines_of_code")
+        logger.info(f"Metric type: {metric_type}")
+
+        if metric_type not in METRIC_ENDPOINTS:
+            logger.error(
+                f"Invalid metric type: {metric_type}. Valid types are: {list(METRIC_ENDPOINTS.keys())}"
+            )
+            return {
+                "statusCode": 400,
+                "body": json.dumps(
+                    {
+                        "error": f"Invalid metric type: {metric_type}. Valid types are: {list(METRIC_ENDPOINTS.keys())}"
+                    }
+                ),
+            }
+
+        # Generate timestamps
+        current_time = datetime.now()
+        timestamp_iso = current_time.isoformat()
+        logger.info(f"Timestamp: {timestamp_iso}")
+
+        # Get the appropriate collector function and execute it
+        collector = METRIC_COLLECTORS[metric_type]
+        logger.info(f"Collector: {collector}")
+        uploaded_files = collector(config, timestamp_iso)
+        logger.info(f"Uploaded files: {uploaded_files}")
+
+        return {
+            "statusCode": 200,
+            "body": json.dumps(
+                {
+                    "message": f"Successfully processed and uploaded {len(uploaded_files)} project files for metric {metric_type}",
+                    "files": uploaded_files,
+                }
+            ),
+        }
+
+    except urllib3.exceptions.HTTPError as e:
+        logger.error(f"Error fetching data from SonarQube: {str(e)}")
+        return {
+            "statusCode": 500,
+            "body": json.dumps(
+                {"error": f"Error fetching data from SonarQube: {str(e)}"}
+            ),
+        }
+    except Exception as e:
+        logger.error(f"Error processing data: {str(e)}")
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": f"Error processing data: {str(e)}"}),
+        }
